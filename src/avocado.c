@@ -267,30 +267,35 @@ ast_node *node(enum asttypes type, ast_node *lhs, ast_node *rhs) {
     to_return->op = type;
     to_return->content.children.lhs = lhs;
     to_return->content.children.rhs = rhs;
+    return to_return;
 }
 
 ast_node *node_int(int val) {
     ast_node *to_return = malloc(sizeof(ast_node));
     to_return->op = TERMINT;
     to_return->content.termint = val;
+    return to_return;
 }
 
 ast_node *node_dbl(double val) {
     ast_node *to_return = malloc(sizeof(ast_node));
     to_return->op = TERMDBL;
     to_return->content.termdbl = val;
+    return to_return;
 }
 
 ast_node *node_str(char *val) {
     ast_node *to_return = malloc(sizeof(ast_node));
     to_return->op = TERMSTR;
     to_return->content.termstr = val;
+    return to_return;
 }
 
 ast_node *node_name(char *val) {
     ast_node *to_return = malloc(sizeof(ast_node));
     to_return->op = TERMNAME;
     to_return->content.termstr = val;
+    return to_return;
 }
 
 void free_node(ast_node *node) {
