@@ -1,4 +1,6 @@
 #!/bin/bash
+
+# note: gcc will yell at you. I'll fix this at some point. Or just remove the pedantic/Wall flags.
 cd parser
 lex grammar.l
 yacc -d grammar.y
