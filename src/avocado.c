@@ -487,21 +487,21 @@ var *vars_quotient(var *v1, var *v2) {
         }
     } else if (v1->type == INT) {
         if (v2->type == DOUBLE) {
-            return newvar_dbl(v1->content.i/v2->content.d);
+            return newvar_dbl((double)v1->content.i/v2->content.d);
         } else if (v2->type == INT) {
-            return newvar_int(v1->content.i/v2->content.i);
+            return newvar_dbl((double)v1->content.i/v2->content.i);
         } else if (v2->type == STRING) {
-            return newvar_int(v1->content.i/atoi(v2->content.s));
+            return newvar_dbl((double)v1->content.i/atoi(v2->content.s));
         } else {
             return newvar_int(0);
         }
     } else if (v1->type == STRING) {
         if (v2->type == DOUBLE) {
-            return newvar_dbl(atoi(v1->content.s)/v2->content.d);
+            return newvar_dbl((double)atoi(v1->content.s)/v2->content.d);
         } else if (v2->type == INT) {
-            return newvar_int(atoi(v1->content.s)/v2->content.i);
+            return newvar_dbl((double)atoi(v1->content.s)/v2->content.i);
         } else if (v2->type == STRING) {
-            return newvar_int(atoi(v1->content.s)/atoi(v2->content.s));
+            return newvar_dbl((double)atoi(v1->content.s)/atoi(v2->content.s));
         } else {
             return newvar_int(0);
         }
