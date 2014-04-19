@@ -1,0 +1,7 @@
+#!/bin/bash
+cd parser
+lex grammar.l
+yacc -d grammar.y
+cd ..
+mv parser/lex.yy.c parser/y.tab.* src
+gcc -Wall -O0 -pedantic -g -o avocado src/lex.yy.c src/y.tab.c src/avocado.c -std=c99
