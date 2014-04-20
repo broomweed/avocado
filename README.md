@@ -25,19 +25,23 @@ Variables can also be declared and initialized in one fell swoop:
 ````
 var y = 5;
 ````
+Variables can hold floating-point numbers as well:
+````
+var f = 5.34;
+````
 Strings are enclosed in single quotes. Variables can hold strings.
 ````
 var h = 'Hello, world!';
 ````
-The `:` operator is used for concatenation:
+The `:` operator is used for concatenation of strings (and numbers):
 ````
 var h5 = h:y;
 // h5 now contains the string 'Hello, world!5'
 ````
-You can use +, -, *, and / for mathematical operations, although floating-point numbers haven't been implemented yet, so all divisions must be integer divisions.
+You can use `+`, `-`, `*`, and `/` to add, subtract, multiply, and divide variables.
 ````
 var z = x + y;
-// z now contains 10 (5 + 5)
+// z now contains 10 (i.e. 5 + 5)
 ````
 You can construct arbitrarily complex expressions as well:
 ````
