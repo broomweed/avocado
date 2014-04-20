@@ -128,7 +128,7 @@ char *getvar_str(char *name) {
     }
     if (find->type == STRING) return find->content.s;
     if (find->type == INT) sprintf(find->str_equiv, "%d", find->content.i);
-    if (find->type == DOUBLE) sprintf(find->str_equiv, "%f", find->content.d);
+    if (find->type == DOUBLE) sprintf(find->str_equiv, "%g", find->content.d);
     return find->str_equiv;
 }
 
@@ -156,7 +156,7 @@ char *getvar_str_fv(var *find) {
         if (find->type == INT) {
             sprintf(strtoret, "%d", find->content.i);
         } else if (find->type == DOUBLE) {
-            sprintf(strtoret, "%f", find->content.d);
+            sprintf(strtoret, "%g", find->content.d);
         }
     }
     find->str_equiv = strtoret;
@@ -403,6 +403,8 @@ var *vars_sum(var *v1, var *v2) {
         } else {
             return newvar_int(0);
         }
+    } else {
+        return newvar_int(0);
     }
 }
 
@@ -437,6 +439,8 @@ var *vars_diff(var *v1, var *v2) {
         } else {
             return newvar_int(0);
         }
+    } else {
+        return newvar_int(0);
     }
 }
 
@@ -471,6 +475,8 @@ var *vars_product(var *v1, var *v2) {
         } else {
             return newvar_int(0);
         }
+    } else {
+        return newvar_int(0);
     }
 }
 
@@ -505,6 +511,8 @@ var *vars_quotient(var *v1, var *v2) {
         } else {
             return newvar_int(0);
         }
+    } else {
+        return newvar_int(0);
     }
 }
 
@@ -519,18 +527,18 @@ var *vars_concat(var *v1, var *v2) {
     strtoret = (char*)malloc((len1 + len2 + 1) * sizeof(char));
     if (v1->type == DOUBLE) {
         if (v2->type == DOUBLE) {
-            sprintf(strtoret, "%f%f", v1->content.d, v2->content.d);
+            sprintf(strtoret, "%g%g", v1->content.d, v2->content.d);
         } else if (v2->type == INT) {
-            sprintf(strtoret, "%f%d", v1->content.d, v2->content.i);
+            sprintf(strtoret, "%g%d", v1->content.d, v2->content.i);
         } else if (v2->type == STRING) {
-            sprintf(strtoret, "%f%s", v1->content.d, v2->content.s);
+            sprintf(strtoret, "%g%s", v1->content.d, v2->content.s);
         } else {
             free(strtoret);
             return newvar_str("");
         }
     } else if (v1->type == INT) {
         if (v2->type == DOUBLE) {
-            sprintf(strtoret, "%d%f", v1->content.i, v2->content.d);
+            sprintf(strtoret, "%d%g", v1->content.i, v2->content.d);
         } else if (v2->type == INT) {
             sprintf(strtoret, "%d%d", v1->content.i, v2->content.i);
         } else if (v2->type == STRING) {
@@ -541,7 +549,7 @@ var *vars_concat(var *v1, var *v2) {
         }
     } else if (v1->type == STRING) {
         if (v2->type == DOUBLE) {
-            sprintf(strtoret, "%s%f", v1->content.s, v2->content.d);
+            sprintf(strtoret, "%s%g", v1->content.s, v2->content.d);
         } else if (v2->type == INT) {
             sprintf(strtoret, "%s%d", v1->content.s, v2->content.i);
         } else if (v2->type == STRING) {

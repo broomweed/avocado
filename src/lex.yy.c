@@ -382,7 +382,7 @@ static yyconst flex_int16_t yy_accept[39] =
         0,    0,   12,   10,    8,    9,   10,   10,    3,    5,
         5,    5,    8,    0,    7,    0,    0,    6,    0,    0,
         3,    5,    5,    5,    0,    7,    0,    0,    6,    0,
-        0,    5,    1,    0,    5,    4,    2,    0
+        4,    5,    1,    0,    5,    4,    2,    0
     } ;
 
 static yyconst flex_int32_t yy_ec[256] =
@@ -782,19 +782,18 @@ YY_RULE_SETUP
 #line 15 "grammar.l"
 {
     yylval.d = atof(yytext);
-    printf("omg double\n");
-    return DOUBLE;
+    return FLOAT;
 }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 20 "grammar.l"
+#line 19 "grammar.l"
 yylval.s=strdup(yytext); return NAME;
 	YY_BREAK
 case 6:
 /* rule 6 can match eol */
 YY_RULE_SETUP
-#line 21 "grammar.l"
+#line 20 "grammar.l"
 {
     yylval.s = (char*)calloc(strlen(yytext)-1, sizeof(char));
     strncpy(yylval.s, &yytext[1], strlen(yytext)-2);
@@ -804,38 +803,37 @@ YY_RULE_SETUP
 case 7:
 /* rule 7 can match eol */
 YY_RULE_SETUP
-#line 26 "grammar.l"
+#line 25 "grammar.l"
 {
     yylval.s = (char*)calloc(strlen(yytext)-1, sizeof(char));
     strncpy(yylval.s, &yytext[1], strlen(yytext)-2);
     return STRLIT;
 }
 	YY_BREAK
-/*<<EOF>>                 { static int once = 0; return once++ ? 0 : '\n'; } */
 /* Ignored. */
 case 8:
 YY_RULE_SETUP
-#line 33 "grammar.l"
+#line 31 "grammar.l"
 /* skip whitespace */;
 	YY_BREAK
 case 9:
 /* rule 9 can match eol */
 YY_RULE_SETUP
-#line 34 "grammar.l"
+#line 32 "grammar.l"
 /* ignore newlines */;
 	YY_BREAK
 /* anything else ... */
 case 10:
 YY_RULE_SETUP
-#line 36 "grammar.l"
+#line 34 "grammar.l"
 return *yytext;
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 37 "grammar.l"
+#line 35 "grammar.l"
 ECHO;
 	YY_BREAK
-#line 839 "lex.yy.c"
+#line 837 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1833,7 +1831,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 37 "grammar.l"
+#line 35 "grammar.l"
 
 
 

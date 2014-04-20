@@ -48,23 +48,19 @@ extern int yydebug;
    enum yytokentype {
      TOKVAR = 258,
      TOKPRINT = 259,
-     PLUS = 260,
-     END_OF_FILE = 261,
-     NAME = 262,
-     INTEGER = 263,
-     STRLIT = 264,
-     DOUBLE = 265
+     NAME = 260,
+     INTEGER = 261,
+     STRLIT = 262,
+     FLOAT = 263
    };
 #endif
 /* Tokens.  */
 #define TOKVAR 258
 #define TOKPRINT 259
-#define PLUS 260
-#define END_OF_FILE 261
-#define NAME 262
-#define INTEGER 263
-#define STRLIT 264
-#define DOUBLE 265
+#define NAME 260
+#define INTEGER 261
+#define STRLIT 262
+#define FLOAT 263
 
 
 
@@ -81,7 +77,7 @@ typedef union YYSTYPE
 
 
 /* Line 2053 of yacc.c  */
-#line 85 "y.tab.h"
+#line 81 "y.tab.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

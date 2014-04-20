@@ -40,7 +40,7 @@ ast_node *root;
 
 %}
 
-%token TOKVAR TOKPRINT PLUS END_OF_FILE
+%token TOKVAR TOKPRINT
 %union
 {
     int i;
@@ -51,7 +51,7 @@ ast_node *root;
 %token <s> NAME
 %token <i> INTEGER
 %token <s> STRLIT
-%token <d> DOUBLE
+%token <d> FLOAT
 %type <n> statementlist
 %type <n> block
 %type <n> statement
@@ -162,6 +162,8 @@ factor:
         $$ = $1;
     } | INTEGER {
         $$ = node_int($1);
+    } | FLOAT {
+        $$ = node_dbl($1);
     } | '(' expr ')' {
         $$ = $2;
     }
