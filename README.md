@@ -29,9 +29,10 @@ Variables can hold floating-point numbers as well:
 ````
 var f = 5.34;
 ````
-Strings are enclosed in single quotes. Variables can hold strings.
+Strings are enclosed in single (or double) quotes. Variables can hold strings.
 ````
 var h = 'Hello, world!';
+var i = "I love ice cream!";
 ````
 The `:` operator is used for concatenation of strings (and numbers):
 ````

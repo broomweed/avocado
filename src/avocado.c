@@ -533,8 +533,7 @@ var *vars_concat(var *v1, var *v2) {
         } else if (v2->type == STRING) {
             sprintf(strtoret, "%g%s", v1->content.d, v2->content.s);
         } else {
-            free(strtoret);
-            return newvar_str("");
+            sprintf(strtoret, "%g", v1->content.d);
         }
     } else if (v1->type == INT) {
         if (v2->type == DOUBLE) {
@@ -544,8 +543,7 @@ var *vars_concat(var *v1, var *v2) {
         } else if (v2->type == STRING) {
             sprintf(strtoret, "%d%s", v1->content.i, v2->content.s);
         } else {
-            free(strtoret);
-            return newvar_str("");
+            sprintf(strtoret, "%d", v1->content.i);
         }
     } else if (v1->type == STRING) {
         if (v2->type == DOUBLE) {
@@ -555,12 +553,19 @@ var *vars_concat(var *v1, var *v2) {
         } else if (v2->type == STRING) {
             sprintf(strtoret, "%s%s", v1->content.s, v2->content.s);
         } else {
+            sprintf(strtoret, "%s", v1->content.s);
+        }
+    } else {
+        if (v2->type == DOUBLE) {
+            sprintf(strtoret, "%g", v2->content.d);
+        } else if (v2->type == INT) {
+            sprintf(strtoret, "%d", v2->content.i);
+        } else if (v2->type == STRING) {
+            sprintf(strtoret, "%s", v2->content.s);
+        } else {
             free(strtoret);
             return newvar_str("");
         }
-    } else {
-        free(strtoret);
-        return newvar_str("");
     }
     /* because newvar_str strcpy's its argument */
     vartoret = newvar_str(strtoret);
@@ -575,7 +580,7 @@ var *var_assign(char *name, var *value) {
         printf("--!-- %s: no such variable\n", name);
         return NULL;
     }
-    if (debug) printf("It's located at %p.\n", find);
+    if (debug) printf("It's located at %p.\n", (void*)find);
     if (value != NULL) {
         switch (value->type) {
             case STRING:
