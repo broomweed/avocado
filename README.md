@@ -53,9 +53,13 @@ You can construct arbitrarily complex expressions as well:
 var c = h:x+4:(y*2)+5:'blah':6
 // c now contains, uhh... 'Hello, world!915blah6'
 ````
-Strings can also be coerced into integers if you so desire:
+String variables, but not string literals, can be coerced into integers if you so desire:
 ````
-var ten = 2 * '5'; // works
+var ten = 2 * '5';      // doesn't work, syntax error
+
+var five = '5';
+var ten2 = 2 * five;
+print ten2;             // works, prints 10
 ````
 Finally, you can print out the value of any variable or expression with the `print` keyword:
 ````
