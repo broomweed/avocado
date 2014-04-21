@@ -27,6 +27,8 @@ print                   return TOKPRINT;
     strncpy(yylval.s, &yytext[1], strlen(yytext)-2);
     return STRLIT;
 }
+  /* Comments. */
+\/\/[^\n]*\n              /* ignore */;
   /* Ignored. */
 [ \t]+                  /* skip whitespace */;
 \n                      /* ignore newlines */;

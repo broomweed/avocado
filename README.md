@@ -34,6 +34,10 @@ Strings are enclosed in single (or double) quotes. Variables can hold strings.
 var h = 'Hello, world!';
 var i = "I love ice cream!";
 ````
+Comments are preceded by a `//`, and last until the end of the line:
+````
+// This is a comment
+````
 The `:` operator is used for concatenation of strings (and numbers):
 ````
 var h5 = h:y;
@@ -60,8 +64,7 @@ print x+6;      // prints 11
 print x:'t';    // prints 5t
 print h:x;      // prints Hello, world!5
 ````
-Newlines can be escaped in printed strings via `\n`.
+Newlines and tabs can be escaped in printed strings via `\n` and `\t`.
 ````
-print x:'\n';   // prints 5, followed by a newline
+print '\t':x:'\n';   // prints 5, preceded by a tab and followed by a newline
 ````
-Even though I've been using //... to denote comments, there are actually no comments. I'll implement them eventually.
