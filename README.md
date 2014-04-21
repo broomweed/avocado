@@ -61,7 +61,7 @@ var five = '5';
 var ten2 = 2 * five;
 print ten2;             // works, prints 10
 ````
-By surrounding a string expression with ```s, you can access the value of the variable referred to by that expression.
+By surrounding a string expression with backticks, you can access the value of the variable referred to by that expression.
 ````
 var ref = 'foo';
 var ref2 = 'fo';
