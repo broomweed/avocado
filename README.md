@@ -61,6 +61,15 @@ var five = '5';
 var ten2 = 2 * five;
 print ten2;             // works, prints 10
 ````
+By surrounding a string expression with ```s, you can access the value of the variable referred to by that expression.
+````
+var ref = 'foo';
+var ref2 = 'fo';
+var foo = 'hello';
+
+print `ref`;        // prints value of variable foo, 'hello'
+print `ref2:'o'`;   // also prints hello
+````
 Finally, you can print out the value of any variable or expression with the `print` keyword:
 ````
 print x;        // prints 5

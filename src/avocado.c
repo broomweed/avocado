@@ -252,6 +252,13 @@ var *ast_eval_expr(ast_node *node) {
         case PRINT:
             print_var(getvar_str_fv(lh));
             break;
+        case VARNAME:
+            to_ret = find_var(getvar_str_fv(lh));
+            if (to_ret == NULL) {
+                printf("--!-- %s: no such variable", getvar_str_fv(lh));
+                to_ret = newvar_int(0);
+            }
+            break;
         default:
             printf("AST operation `%c` unimplemented", node->op);
     }
