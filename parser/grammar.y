@@ -41,7 +41,7 @@ ast_node *root;
 %}
 
 %token TOKVAR TOKPRINT TOKIF TOKELSE TOKNOTHING TOKTRUE TOKFALSE TOKWHILE TOKDEF
-%token EQ LTEQ GTEQ LT GT NE AND OR NOT XOR
+%token EQ LTEQ GTEQ LT GT NE SEQ SLTEQ SGTEQ SLT SGT SNE AND OR NOT XOR
 %union
 {
     int i;
@@ -117,17 +117,29 @@ cond:
 
 test:
     test '>' subtest {
-        $$ = node(CMP_GT, $1, $3);
+        $$ = node(NUM_GT, $1, $3);
     } | test '<' subtest {
-        $$ = node(CMP_LT, $1, $3);
+        $$ = node(NUM_LT, $1, $3);
     } | test EQ subtest {
-        $$ = node(CMP_EQ, $1, $3);
+        $$ = node(NUM_EQ, $1, $3);
     } | test LTEQ subtest {
-        $$ = node(CMP_LTEQ, $1, $3);
+        $$ = node(NUM_LTEQ, $1, $3);
     } | test GTEQ subtest {
-        $$ = node(CMP_GTEQ, $1, $3);
+        $$ = node(NUM_GTEQ, $1, $3);
     } | test NE subtest {
-        $$ = node(CMP_NE, $1, $3);
+        $$ = node(NUM_NE, $1, $3);
+    } | test SGT subtest {
+        $$ = node(STR_GT, $1, $3);
+    } | test SLT subtest {
+        $$ = node(STR_LT, $1, $3);
+    } | test SEQ subtest {
+        $$ = node(STR_EQ, $1, $3);
+    } | test SNE subtest {
+        $$ = node(STR_NE, $1, $3);
+    } | test SLTEQ subtest {
+        $$ = node(STR_LTEQ, $1, $3);
+    } | test SGTEQ subtest {
+        $$ = node(STR_GTEQ, $1, $3);
     } | strexpr {
         $$ = $1;
     }

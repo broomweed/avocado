@@ -58,6 +58,7 @@ var *vars_diff(var *v1, var *v2);
 var *vars_product(var *v1, var *v2);
 var *vars_quotient(var *v1, var *v2);
 var *vars_concat(var *v1, var *v2);
+var *vars_cmp(var *v1, var *v2, enum asttypes type);
 
 void print_var(char *str);
 char *str_dup(char *str);
@@ -337,23 +338,19 @@ var *ast_eval_expr(ast_node *node) {
                 to_ret = newvar_int(0);
             }
             break;
-        case CMP_GT:
-            to_ret = newvar_boolean(getvar_double_fv(lh) > getvar_double_fv(rh));
-            break;
-        case CMP_LT:
-            to_ret = newvar_boolean(getvar_double_fv(lh) < getvar_double_fv(rh));
-            break;
-        case CMP_GTEQ:
-            to_ret = newvar_boolean(getvar_double_fv(lh) >= getvar_double_fv(rh));
-            break;
-        case CMP_LTEQ:
-            to_ret = newvar_boolean(getvar_double_fv(lh) <= getvar_double_fv(rh));
-            break;
-        case CMP_EQ:
-            to_ret = newvar_boolean(getvar_double_fv(lh) == getvar_double_fv(rh));
-            break;
-        case CMP_NE:
-            to_ret = newvar_boolean(getvar_double_fv(lh) != getvar_double_fv(rh));
+        case NUM_GT:
+        case NUM_LT:
+        case NUM_GTEQ:
+        case NUM_LTEQ:
+        case NUM_EQ:
+        case NUM_NE:
+        case STR_GT:
+        case STR_LT:
+        case STR_GTEQ:
+        case STR_LTEQ:
+        case STR_EQ:
+        case STR_NE:
+            to_ret = vars_cmp(lh, rh, node->op);
             break;
         default:
             printf("AST operation `%c` unimplemented", node->op);
@@ -725,6 +722,38 @@ var *vars_concat(var *v1, var *v2) {
     vartoret = newvar_str(strtoret);
     free(strtoret);
     return vartoret;
+}
+
+var *vars_cmp(var *v1, var *v2, enum asttypes type) {
+    switch (type) {
+        case NUM_EQ:
+            return newvar_boolean(getvar_double_fv(v1) == getvar_double_fv(v2));
+        case NUM_NE:
+            return newvar_boolean(getvar_double_fv(v1) != getvar_double_fv(v2));
+        case NUM_GT:
+            return newvar_boolean(getvar_double_fv(v1) > getvar_double_fv(v2));
+        case NUM_LT:
+            return newvar_boolean(getvar_double_fv(v1) < getvar_double_fv(v2));
+        case NUM_GTEQ:
+            return newvar_boolean(getvar_double_fv(v1) >= getvar_double_fv(v2));
+        case NUM_LTEQ:
+            return newvar_boolean(getvar_double_fv(v1) <= getvar_double_fv(v2));
+        case STR_EQ:
+            return newvar_boolean(strcmp(getvar_str_fv(v1), getvar_str_fv(v2)) == 0);
+        case STR_NE:
+            return newvar_boolean(strcmp(getvar_str_fv(v1), getvar_str_fv(v2)) != 0);
+        case STR_GT:
+            return newvar_boolean(strcmp(getvar_str_fv(v1), getvar_str_fv(v2)) > 0);
+        case STR_LT:
+            return newvar_boolean(strcmp(getvar_str_fv(v1), getvar_str_fv(v2)) < 0);
+        case STR_GTEQ:
+            return newvar_boolean(strcmp(getvar_str_fv(v1), getvar_str_fv(v2)) >= 0);
+        case STR_LTEQ:
+            return newvar_boolean(strcmp(getvar_str_fv(v1), getvar_str_fv(v2)) <= 0);
+        default:
+            printf("I don't know how to compare by %c.\n", type);
+            return NULL;
+    }
 }
 
 var *var_assign(char *name, var *value) {

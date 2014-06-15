@@ -61,14 +61,20 @@ extern int yydebug;
      LT = 270,
      GT = 271,
      NE = 272,
-     AND = 273,
-     OR = 274,
-     NOT = 275,
-     XOR = 276,
-     NAME = 277,
-     INTEGER = 278,
-     STRLIT = 279,
-     FLOAT = 280
+     SEQ = 273,
+     SLTEQ = 274,
+     SGTEQ = 275,
+     SLT = 276,
+     SGT = 277,
+     SNE = 278,
+     AND = 279,
+     OR = 280,
+     NOT = 281,
+     XOR = 282,
+     NAME = 283,
+     INTEGER = 284,
+     STRLIT = 285,
+     FLOAT = 286
    };
 #endif
 /* Tokens.  */
@@ -87,14 +93,20 @@ extern int yydebug;
 #define LT 270
 #define GT 271
 #define NE 272
-#define AND 273
-#define OR 274
-#define NOT 275
-#define XOR 276
-#define NAME 277
-#define INTEGER 278
-#define STRLIT 279
-#define FLOAT 280
+#define SEQ 273
+#define SLTEQ 274
+#define SGTEQ 275
+#define SLT 276
+#define SGT 277
+#define SNE 278
+#define AND 279
+#define OR 280
+#define NOT 281
+#define XOR 282
+#define NAME 283
+#define INTEGER 284
+#define STRLIT 285
+#define FLOAT 286
 
 
 
@@ -111,7 +123,7 @@ typedef union YYSTYPE
 
 
 /* Line 2053 of yacc.c  */
-#line 115 "y.tab.h"
+#line 127 "y.tab.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
