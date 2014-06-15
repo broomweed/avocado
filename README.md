@@ -51,7 +51,7 @@ var z = x + y;
 ````
 You can construct arbitrarily complex expressions as well:
 ````
-var c = h:x+4:(y*2)+5:'blah':6
+var c = h:x+4:(y*2)+5:'blah':6;
 // c now contains, uhh... 'Hello, world!915blah6'
 ````
 String variables, but not string literals, can be coerced into integers if you so desire:
