@@ -14,6 +14,7 @@ print                   return TOKPRINT;
 if                      return TOKIF;
 else                    return TOKELSE;
 while                   return TOKWHILE;
+def                     return TOKDEF;
 nothing                 return TOKNOTHING;
 true                    return TOKTRUE;
 false                   return TOKFALSE;

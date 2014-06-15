@@ -40,7 +40,7 @@ ast_node *root;
 
 %}
 
-%token TOKVAR TOKPRINT TOKIF TOKELSE TOKNOTHING TOKTRUE TOKFALSE TOKWHILE
+%token TOKVAR TOKPRINT TOKIF TOKELSE TOKNOTHING TOKTRUE TOKFALSE TOKWHILE TOKDEF
 %token EQ LTEQ GTEQ LT GT NE AND OR NOT XOR
 %union
 {
@@ -117,17 +117,17 @@ cond:
 
 test:
     test '>' subtest {
-        $$ = node(GT, $1, $3);
+        $$ = node(CMP_GT, $1, $3);
     } | test '<' subtest {
-        $$ = node(LT, $1, $3);
+        $$ = node(CMP_LT, $1, $3);
     } | test EQ subtest {
-        $$ = node(EQ, $1, $3);
+        $$ = node(CMP_EQ, $1, $3);
     } | test LTEQ subtest {
-        $$ = node(LTEQ, $1, $3);
+        $$ = node(CMP_LTEQ, $1, $3);
     } | test GTEQ subtest {
-        $$ = node(GTEQ, $1, $3);
+        $$ = node(CMP_GTEQ, $1, $3);
     } | test NE subtest {
-        $$ = node(NE, $1, $3);
+        $$ = node(CMP_NE, $1, $3);
     } | strexpr {
         $$ = $1;
     }

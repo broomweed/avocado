@@ -301,6 +301,7 @@ var *ast_eval_expr(ast_node *node) {
     }
     switch(node->op) {
         /* These operations act on the left/right nodes of the tree. */
+        /* MATH */
         case ADD:
             to_ret = vars_sum(lh, rh);
             break;
@@ -316,6 +317,7 @@ var *ast_eval_expr(ast_node *node) {
         case CONCAT:
             to_ret = vars_concat(lh, rh);
             break;
+        /* VARS */
         case CREATE:
             addvar(getvar_str_fv(lh));
             if (rh != NULL) {
@@ -334,6 +336,24 @@ var *ast_eval_expr(ast_node *node) {
                 printf("--!-- %s: no such variable\n", getvar_str_fv(lh));
                 to_ret = newvar_int(0);
             }
+            break;
+        case CMP_GT:
+            to_ret = newvar_boolean(getvar_double_fv(lh) > getvar_double_fv(rh));
+            break;
+        case CMP_LT:
+            to_ret = newvar_boolean(getvar_double_fv(lh) < getvar_double_fv(rh));
+            break;
+        case CMP_GTEQ:
+            to_ret = newvar_boolean(getvar_double_fv(lh) >= getvar_double_fv(rh));
+            break;
+        case CMP_LTEQ:
+            to_ret = newvar_boolean(getvar_double_fv(lh) <= getvar_double_fv(rh));
+            break;
+        case CMP_EQ:
+            to_ret = newvar_boolean(getvar_double_fv(lh) == getvar_double_fv(rh));
+            break;
+        case CMP_NE:
+            to_ret = newvar_boolean(getvar_double_fv(lh) != getvar_double_fv(rh));
             break;
         default:
             printf("AST operation `%c` unimplemented", node->op);

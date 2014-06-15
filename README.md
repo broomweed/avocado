@@ -11,7 +11,7 @@ Nothing much, at the moment, although its functionality is growing fast. This re
 The syntax is fairly simple.
 Statements must be terminated with semicolons.
 
-##### Variable semantics
+#### Variable semantics
 
 Variables are declared using the `var` keyword, a la Javascript:
 ````
@@ -35,7 +35,7 @@ var h = 'Hello, world!';
 var i = "I love ice cream!";
 ````
 
-##### Operators and things like that
+#### Operators and things like that
 
 Comments are preceded by a `//`, and last until the end of the line:
 ````
@@ -66,7 +66,7 @@ print x:'t';    // prints 5t
 print h:x;      // prints Hello, world!5
 ````
 
-##### Booleans and tests
+#### Booleans and tests
 
 The special values `true`, `false`, and `nothing` can also be assigned to variables:
 ````
@@ -101,7 +101,7 @@ while w {
 // prints '54321'
 ````
 
-##### Other stuff
+#### Other stuff
 
 String variables, but not string literals, can be coerced into integers if you so desire:
 ````

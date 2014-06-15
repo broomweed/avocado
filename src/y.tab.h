@@ -54,20 +54,21 @@ extern int yydebug;
      TOKTRUE = 263,
      TOKFALSE = 264,
      TOKWHILE = 265,
-     EQ = 266,
-     LTEQ = 267,
-     GTEQ = 268,
-     LT = 269,
-     GT = 270,
-     NE = 271,
-     AND = 272,
-     OR = 273,
-     NOT = 274,
-     XOR = 275,
-     NAME = 276,
-     INTEGER = 277,
-     STRLIT = 278,
-     FLOAT = 279
+     TOKDEF = 266,
+     EQ = 267,
+     LTEQ = 268,
+     GTEQ = 269,
+     LT = 270,
+     GT = 271,
+     NE = 272,
+     AND = 273,
+     OR = 274,
+     NOT = 275,
+     XOR = 276,
+     NAME = 277,
+     INTEGER = 278,
+     STRLIT = 279,
+     FLOAT = 280
    };
 #endif
 /* Tokens.  */
@@ -79,20 +80,21 @@ extern int yydebug;
 #define TOKTRUE 263
 #define TOKFALSE 264
 #define TOKWHILE 265
-#define EQ 266
-#define LTEQ 267
-#define GTEQ 268
-#define LT 269
-#define GT 270
-#define NE 271
-#define AND 272
-#define OR 273
-#define NOT 274
-#define XOR 275
-#define NAME 276
-#define INTEGER 277
-#define STRLIT 278
-#define FLOAT 279
+#define TOKDEF 266
+#define EQ 267
+#define LTEQ 268
+#define GTEQ 269
+#define LT 270
+#define GT 271
+#define NE 272
+#define AND 273
+#define OR 274
+#define NOT 275
+#define XOR 276
+#define NAME 277
+#define INTEGER 278
+#define STRLIT 279
+#define FLOAT 280
 
 
 
@@ -109,7 +111,7 @@ typedef union YYSTYPE
 
 
 /* Line 2053 of yacc.c  */
-#line 113 "y.tab.h"
+#line 115 "y.tab.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

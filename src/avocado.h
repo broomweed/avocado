@@ -22,7 +22,7 @@ enum asttypes {
     DIV = '/',
     CONCAT = ':',
     CREATE = 'v',
-    ASSIGN = '=',
+    ASSIGN = '_',
     BLOCK = '}',
     IF = 'i',
     IFELSE = 'e',
@@ -31,6 +31,15 @@ enum asttypes {
     BOR = '|',
     BNOT = '!',
     BXOR = '1', // as in '1 only'
+    /* CMP_ because you can't name
+       two enumerations the same thing,
+       ever, anywhere... C, man */
+    CMP_GT = '>',
+    CMP_LT = '<',
+    CMP_GTEQ = '(',
+    CMP_LTEQ = ')',
+    CMP_EQ = '=',
+    CMP_NE = '#',
     PRINT = 'p',
     VARNAME = '`',
     TERMINT = 'I',
