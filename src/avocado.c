@@ -10,18 +10,22 @@ var *vars = NULL;
 void setvar_str(char *name, char *val);
 void setvar_double(char *name, double val);
 void setvar_int(char *name, int val);
+void setvar_boolean(char *name, int val);
 /* var-setting by pointer */
 void setvar_str_fv(var *var, char *val);
 void setvar_double_fv(var *var, double val);
 void setvar_int_fv(var *var, int val);
+void setvar_boolean_fv(var *var, int val);
 /* var-getting by name */
 int getvar_int(char *name);
 char *getvar_str(char *name);
 double getvar_double(char *name);
+int getvar_boolean(char *name);
 /* var-getting by pointer */
 int getvar_int_fv(var *var);
 char *getvar_str_fv(var *var);
 double getvar_double_fv(var *var);
+int getvar_boolean_fv(var *var);
 /* var stuff */
 var *addvar(char *name);
 var *find_var(char *name);
@@ -32,8 +36,11 @@ ast_node *node_int(int val);
 ast_node *node_str(char *val);
 ast_node *node_dbl(double val);
 ast_node *node_name(char *val);
+ast_node *node_boolean(int val);
+ast_node *node_nothing();
 /* mem stuff */
 void free_node(ast_node *node);
+var *alloc_var();
 void free_var(var *to_free);
 void cleanup();
 
@@ -41,6 +48,8 @@ void cleanup();
 var *newvar_int(int val);
 var *newvar_str(char *str);
 var *newvar_dbl(double val);
+var *newvar_boolean(int val);
+var *newvar_nothing();
 var *var_assign(char *name, var *value);
 
 /* var arithmetic/operators */
@@ -51,6 +60,7 @@ var *vars_quotient(var *v1, var *v2);
 var *vars_concat(var *v1, var *v2);
 
 void print_var(char *str);
+char *str_dup(char *str);
 
 void setvar_str(char *name, char *val) {
     var *to_set = find_var(name);
@@ -89,6 +99,11 @@ void setvar_int(char *name, int val) {
     to_set->type = INT;
 }
 
+void setvar_boolean(char *name, int val) {
+    var *to_set = find_var(name);
+    setvar_boolean_fv(to_set, val);
+}
+
 void setvar_str_fv(var *to_set, char *val) {
     if (to_set->type == STRING) {
         free(to_set->content.s);
@@ -114,6 +129,23 @@ void setvar_int_fv(var *to_set, int val) {
     to_set->type = INT;
 }
 
+void setvar_boolean_fv(var *to_set, int val) {
+    if (to_set->type == STRING) {
+        free(to_set->content.s);
+    }
+    if (val) to_set->content.i = 1;
+    else to_set->content.i = 0;
+    to_set->type = BOOLEAN;
+}
+
+void make_var_nothing(var *find) {
+    if (find->type == STRING) {
+        free(find->content.s);
+    }
+    find->type = NOTHING;
+    find->content.i = 0;
+}
+
 int getvar_int(char *name) {
     var *find = find_var(name);
     return getvar_int_fv(find);
@@ -137,11 +169,16 @@ double getvar_double(char *name) {
     return getvar_double_fv(find);
 }
 
+int getvar_boolean(char *name) {
+    var *find = find_var(name);
+    return getvar_boolean_fv(find);
+}
+
 int getvar_int_fv(var *find) {
     if (find == NULL) return 0;
-    if (find->type == INT) return find->content.i;
-    if (find->type == DOUBLE) return (int)find->content.d;
-    if (find->type == STRING) return atoi(find->content.s);
+    else if (find->type == INT || find->type == BOOLEAN) return find->content.i;
+    else if (find->type == DOUBLE) return (int)find->content.d;
+    else if (find->type == STRING) return atoi(find->content.s);
     else return 0;
 }
 
@@ -157,6 +194,11 @@ char *getvar_str_fv(var *find) {
             sprintf(strtoret, "%d", find->content.i);
         } else if (find->type == DOUBLE) {
             sprintf(strtoret, "%g", find->content.d);
+        } else if (find->type == BOOLEAN) {
+            if (find->content.i)
+                sprintf(strtoret, "true");
+            else
+                sprintf(strtoret, "false");
         }
     }
     find->str_equiv = strtoret;
@@ -165,16 +207,24 @@ char *getvar_str_fv(var *find) {
 
 double getvar_double_fv(var *find) {
     if (find == NULL) return 0.0f;
-    if (find->type == STRING) return atof(find->content.s);
-    if (find->type == INT) return (double)find->content.i;
-    if (find->type == DOUBLE) return find->content.d;
+    else if (find->type == STRING) return atof(find->content.s);
+    else if (find->type == INT || find->type == BOOLEAN) return (double)find->content.i;
+    else if (find->type == DOUBLE) return find->content.d;
     else return 0.0f;
+}
+
+int getvar_boolean_fv(var *find) {
+    if (find == NULL) return 0;
+    else if (find->type == NOTHING) return 0;
+    else if (find->type == BOOLEAN && find->content.i == 0) return 0;
+    else return 1;
 }
 
 var *addvar(char *name) {
     var *to_add = (var*)malloc(sizeof(var));
     if (to_add == NULL) {
         printf("Couldn't create variable %s: out of memory!\n", name);
+        return NULL;
     }
     strncpy(to_add->name, name, 64);
     to_add->type = UNDEFINED;
@@ -199,7 +249,7 @@ var *ast_eval_expr(ast_node *node) {
             if (debug) printf("it's an int!\n");
             return newvar_int(node->content.termint);
         case TERMSTR:
-            if (debug) printf("it's a string!\n");
+            if (debug) printf("it's a string! (at %p)\n", node->content.termstr);
             return newvar_str(node->content.termstr);
         case TERMDBL:
             if (debug) printf("it's a double!\n");
@@ -212,10 +262,31 @@ var *ast_eval_expr(ast_node *node) {
                 return newvar_int(0);
             }
             return to_ret;
+        case EMPTY:
+            if (debug) printf("(empty)\n");
+            return newvar_nothing();
+        case TERMBOOLEAN:
+            if (debug) printf("it's a boolean!\n");
+            return newvar_boolean(node->content.termint);
         case BLOCK:
             if (debug) printf("BLOCK...\n");
             ast_eval_expr(node->content.children.lhs);
             ast_eval_expr(node->content.children.rhs);
+            return NULL;
+        case IF:
+            if (debug) printf("If.\n");
+            // dang, bro
+            if (getvar_boolean_fv(ast_eval_expr(node->content.children.lhs))) {
+                ast_eval_expr(node->content.children.rhs->content.children.lhs);
+            } else {
+                ast_eval_expr(node->content.children.rhs->content.children.rhs);
+            }
+            return NULL;
+        case WHILE:
+            if (debug) printf("While.\n");
+            while (getvar_boolean_fv(ast_eval_expr(node->content.children.lhs))) {
+                ast_eval_expr(node->content.children.rhs);
+            }
             return NULL;
         default:
             if (debug) printf("...\n");
@@ -245,6 +316,9 @@ var *ast_eval_expr(ast_node *node) {
             break;
         case CREATE:
             addvar(getvar_str_fv(lh));
+            if (rh != NULL) {
+                var_assign(getvar_str_fv(lh), rh);
+            }
             break;
         case ASSIGN:
             var_assign(getvar_str_fv(lh), rh);
@@ -255,7 +329,7 @@ var *ast_eval_expr(ast_node *node) {
         case VARNAME:
             to_ret = find_var(getvar_str_fv(lh));
             if (to_ret == NULL) {
-                printf("--!-- %s: no such variable", getvar_str_fv(lh));
+                printf("--!-- %s: no such variable\n", getvar_str_fv(lh));
                 to_ret = newvar_int(0);
             }
             break;
@@ -305,16 +379,43 @@ ast_node *node_name(char *val) {
     return to_return;
 }
 
+ast_node *node_boolean(int val) {
+    ast_node *to_return = malloc(sizeof(ast_node));
+    if (to_return == NULL) {
+        printf("Possibly out of memory!\n");
+        return NULL;
+    }
+    to_return->op = TERMBOOLEAN;
+    to_return->content.termint = val;
+    return to_return;
+}
+
+ast_node *node_nothing() {
+    ast_node *to_return = malloc(sizeof(ast_node));
+    to_return->op = EMPTY;
+    return to_return;
+}
+
 void free_node(ast_node *node) {
     if (node == NULL) return;
+    if (debug) printf("Freeing node. Op: %c\n", node->op);
     if (node->op == TERMSTR || node->op == TERMNAME) {
-        free(node->content.termstr);
-    } else if (node->op != TERMINT && node->op != TERMDBL) {
+        if (node->content.termstr != NULL) {
+            free(node->content.termstr);
+        }
+    } else if (node->op != TERMINT && node->op != TERMDBL
+            && node->op != TERMBOOLEAN
+            && node->op != EMPTY) {
+        if (debug) printf("Freeing LHS of %c...\n", node->op);
         free_node(node->content.children.lhs);
+        node->content.children.lhs = NULL;
         if (node->content.children.rhs != NULL) {
+            if (debug) printf("Freeing RHS of %c...\n", node->op);
             free_node(node->content.children.rhs);
+            node->content.children.rhs = NULL;
         }
     }
+    if (debug) printf("Freeing node %c.\n", node->op);
     free(node);
 }
 
@@ -340,42 +441,66 @@ void cleanup() {
 }
 
 var *newvar_int(int val) {
-    var *t = malloc(sizeof(var));
-    if (t == NULL) {
-        printf("Out of memory!\n");
-        return NULL;
+    var *t = alloc_var();
+    if (t != NULL) {
+        t->type = INT;
+        t->content.i = val;
+        t->name[0] = '\0';
+        t->str_equiv = NULL;
     }
-    t->type = INT;
-    t->content.i = val;
-    t->name[0] = '\0';
-    t->str_equiv = NULL;
     return t;
 }
 
 var *newvar_dbl(double val) {
-    var *t = (var*)malloc(sizeof(var));
-    if (t == NULL) {
-        printf("Out of memory!\n");
-        return NULL;
+    var *t = alloc_var();
+    if (t != NULL) {
+        t->type = DOUBLE;
+        t->content.d = val;
+        t->name[0] = '\0';
+        t->str_equiv = NULL;
     }
-    t->type = DOUBLE;
-    t->content.d = val;
-    t->name[0] = '\0';
-    t->str_equiv = NULL;
     return t;
 }
 
 var *newvar_str(char *str) {
+    var *t = alloc_var();
+    if (t != NULL) {
+        t->type = STRING;
+        t->content.s = (char*)malloc(strlen(str)+1);
+        strcpy(t->content.s, str);
+        t->name[0] = '\0';
+        t->str_equiv = NULL;
+    }
+    return t;
+}
+
+var *newvar_boolean(int val) {
+    var *t = alloc_var();
+    if (t != NULL) {
+        t->type = BOOLEAN;
+        if (val) t->content.i = 1;
+        else t->content.i = 0;
+        t->name[0] = '\0';
+        t->str_equiv = NULL;
+    }
+    return t;
+}
+
+var *newvar_nothing() {
+    var *t = alloc_var();
+    if (t != NULL) {
+        t->type = NOTHING;
+        t->name[0] = '\0';
+        t->str_equiv = NULL;
+    }
+    return t;
+}
+
+var *alloc_var() {
     var *t = (var*)malloc(sizeof(var));
     if (t == NULL) {
         printf("Out of memory!\n");
-        return NULL;
     }
-    t->type = STRING;
-    t->content.s = (char*)malloc(strlen(str)+1);
-    strcpy(t->content.s, str);
-    t->name[0] = '\0';
-    t->str_equiv = NULL;
     return t;
 }
 
@@ -599,6 +724,9 @@ var *var_assign(char *name, var *value) {
             case DOUBLE:
                 setvar_double_fv(find, getvar_double_fv(value));
                 break;
+            case BOOLEAN:
+                setvar_boolean_fv(find, getvar_boolean_fv(value));
+                break;
             default:
                 setvar_int_fv(find, getvar_int_fv(value));
         }
@@ -620,28 +748,35 @@ void print_var(char *str) {
         } else {
             switch(str[i]) {
                 case 'n':
-                putchar('\n');
-                break;
+                    putchar('\n');
+                    break;
                 case 't':
-                putchar('\t');
-                break;
+                    putchar('\t');
+                    break;
                 case 'r':
-                putchar('\r');
-                break;
+                    putchar('\r');
+                    break;
                 case '\'':
-                putchar('\'');
-                break;
+                    putchar('\'');
+                    break;
                 case '"':
-                putchar('"');
-                break;
+                    putchar('"');
+                    break;
                 case '\\':
-                putchar('\\');
-                break;
+                    putchar('\\');
+                    break;
                 default:
-                putchar(str[i]);
+                    putchar(str[i]);
             }
         }
         last = str[i];
         i++;
     }
+}
+
+char *str_dup(char *str) {
+    char *to_ret = malloc ((strlen(str)+1) * sizeof(char));
+    if (to_ret == NULL) return to_ret;
+    strcpy(to_ret, str);
+    return to_ret;
 }

@@ -40,7 +40,8 @@ ast_node *root;
 
 %}
 
-%token TOKVAR TOKPRINT
+%token TOKVAR TOKPRINT TOKIF TOKELSE TOKNOTHING TOKTRUE TOKFALSE TOKWHILE
+%token EQ LTEQ GTEQ LT GT NE AND OR NOT XOR
 %union
 {
     int i;
@@ -54,6 +55,10 @@ ast_node *root;
 %token <d> FLOAT
 %type <n> statementlist
 %type <n> block
+%type <n> cond
+%type <n> test
+%type <n> subtest
+%type <n> qualifiedblock
 %type <n> statement
 %type <n> assignment
 %type <n> declare
@@ -88,6 +93,54 @@ block:
         $$ = $2;
     }
 
+qualifiedblock:
+    TOKIF cond block {
+        $$ = node(IF, $2, node(IFELSE, $3, NULL));
+    } | TOKIF cond block TOKELSE qualifiedblock {
+        $$ = node(IF, $2, node(IFELSE, $3, $5));
+    } | TOKWHILE cond block {
+        $$ = node(WHILE, $2, $3);
+    } | block {
+        $$ = $1;
+    }
+
+cond:
+    cond AND test {
+        $$ = node(BAND, $1, $3);
+    } | cond OR test {
+        $$ = node(BOR, $1, $3);
+    } | cond XOR test {
+        $$ = node(BXOR, $1, $3);
+    } | test {
+        $$ = $1;
+    }
+
+test:
+    test '>' subtest {
+        $$ = node(GT, $1, $3);
+    } | test '<' subtest {
+        $$ = node(LT, $1, $3);
+    } | test EQ subtest {
+        $$ = node(EQ, $1, $3);
+    } | test LTEQ subtest {
+        $$ = node(LTEQ, $1, $3);
+    } | test GTEQ subtest {
+        $$ = node(GTEQ, $1, $3);
+    } | test NE subtest {
+        $$ = node(NE, $1, $3);
+    } | strexpr {
+        $$ = $1;
+    }
+
+subtest:
+    strexpr {
+        $$ = $1;
+    } | '!' subtest {
+        $$ = node(BNOT, $2, NULL);
+    } | '(' cond ')' {
+        $$ = $2;
+    }
+
 statement:
     assignment ';' {
         $$ = $1;
@@ -97,7 +150,7 @@ statement:
         $$ = $1;
     } | TOKPRINT strexpr ';' {
         $$ = node(PRINT, $2, NULL);
-    } | block {
+    } | qualifiedblock {
         $$ = $1;
     }
 
@@ -113,7 +166,7 @@ newvar:
 
 declare:
     TOKVAR varnamestr '=' strexpr {
-        $$ = node(BLOCK, node(CREATE, $2, NULL), node(ASSIGN, $2, $4));
+        $$ = node(CREATE, $2, $4);
     }
 
 varnamestr:
@@ -146,6 +199,12 @@ expr:
         $$ = $1;
     } | STRLIT {
         $$ = node_str($1);
+    } | TOKNOTHING {
+        $$ = node_nothing();
+    } | TOKTRUE {
+        $$ = node_boolean(1);
+    } | TOKFALSE {
+        $$ = node_boolean(0);
     }
 
 term:

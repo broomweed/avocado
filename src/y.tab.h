@@ -48,19 +48,51 @@ extern int yydebug;
    enum yytokentype {
      TOKVAR = 258,
      TOKPRINT = 259,
-     NAME = 260,
-     INTEGER = 261,
-     STRLIT = 262,
-     FLOAT = 263
+     TOKIF = 260,
+     TOKELSE = 261,
+     TOKNOTHING = 262,
+     TOKTRUE = 263,
+     TOKFALSE = 264,
+     TOKWHILE = 265,
+     EQ = 266,
+     LTEQ = 267,
+     GTEQ = 268,
+     LT = 269,
+     GT = 270,
+     NE = 271,
+     AND = 272,
+     OR = 273,
+     NOT = 274,
+     XOR = 275,
+     NAME = 276,
+     INTEGER = 277,
+     STRLIT = 278,
+     FLOAT = 279
    };
 #endif
 /* Tokens.  */
 #define TOKVAR 258
 #define TOKPRINT 259
-#define NAME 260
-#define INTEGER 261
-#define STRLIT 262
-#define FLOAT 263
+#define TOKIF 260
+#define TOKELSE 261
+#define TOKNOTHING 262
+#define TOKTRUE 263
+#define TOKFALSE 264
+#define TOKWHILE 265
+#define EQ 266
+#define LTEQ 267
+#define GTEQ 268
+#define LT 269
+#define GT 270
+#define NE 271
+#define AND 272
+#define OR 273
+#define NOT 274
+#define XOR 275
+#define NAME 276
+#define INTEGER 277
+#define STRLIT 278
+#define FLOAT 279
 
 
 
@@ -68,7 +100,7 @@ extern int yydebug;
 typedef union YYSTYPE
 {
 /* Line 2053 of yacc.c  */
-#line 45 "grammar.y"
+#line 46 "grammar.y"
 
     int i;
     char *s;
@@ -77,7 +109,7 @@ typedef union YYSTYPE
 
 
 /* Line 2053 of yacc.c  */
-#line 81 "y.tab.h"
+#line 113 "y.tab.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
