@@ -1,18 +1,17 @@
-Avocado
-=======
+# Avocado
 
 Avocado is a tiny programming language, implemented using Lex and Yacc.
 
-What does it do?
-----------------
+## What does it do?
 
-Nothing much, at the moment. It doesn't even have an IF statement. This repository is just for me to track my changes, right now.
+Nothing much, at the moment, although its functionality is growing fast. This repository is just for me to track my changes, right now.
 
-Syntax overview
----------------
+## Syntax overview
 
 The syntax is fairly simple.
 Statements must be terminated with semicolons.
+
+##### Variable semantics
 
 Variables are declared using the `var` keyword, a la Javascript:
 ````
@@ -35,6 +34,9 @@ Strings are enclosed in single (or double) quotes. Variables can hold strings.
 var h = 'Hello, world!';
 var i = "I love ice cream!";
 ````
+
+##### Operators and things like that
+
 Comments are preceded by a `//`, and last until the end of the line:
 ````
 // This is a comment
@@ -43,6 +45,8 @@ The `:` operator is used for concatenation of strings (and numbers):
 ````
 var h5 = h:y;
 // h5 now contains the string 'Hello, world!5'
+var h_i = h:' ':i;
+// h_i now contains the string 'Hello, world! I love ice cream!'
 ````
 You can use `+`, `-`, `*`, and `/` to add, subtract, multiply, and divide variables.
 ````
@@ -54,6 +58,51 @@ You can construct arbitrarily complex expressions as well:
 var c = h:x+4:(y*2)+5:'blah':6;
 // c now contains, uhh... 'Hello, world!915blah6'
 ````
+You can print out the value of any variable or expression with the `print` keyword:
+````
+print x;        // prints 5
+print x+6;      // prints 11
+print x:'t';    // prints 5t
+print h:x;      // prints Hello, world!5
+````
+
+##### Booleans and tests
+
+The special values `true`, `false`, and `nothing` can also be assigned to variables:
+````
+var yes = true;
+var no = false;
+var ghosts = nothing;
+````
+You can evaluate variables with the `if`, `else`, and `while` statements. `nothing` evaluates to false.
+````
+if yes {
+    print 'Yes!';
+}
+// prints 'Yes!'
+
+if no {
+    print 'No!';
+}
+// doesn't print anything
+
+if ghosts {
+    print 'Ghosts exist!';
+} else {
+    print "Ghosts aren't real.";
+}
+// prints 'Ghosts aren't real.'
+
+var w = 5;
+while w {
+    print w;
+    w = w - 1;
+}
+// prints '54321'
+````
+
+##### Other stuff
+
 String variables, but not string literals, can be coerced into integers if you so desire:
 ````
 var ten = 2 * '5';      // doesn't work, syntax error
@@ -72,13 +121,6 @@ var hello = 'world';
 print `ref`;        // prints value of variable foo, 'hello'
 print `ref2:'o'`;   // also prints hello
 print ``ref``;      // prints 'world' (``ref`` -> `foo` -> hello)
-````
-Finally, you can print out the value of any variable or expression with the `print` keyword:
-````
-print x;        // prints 5
-print x+6;      // prints 11
-print x:'t';    // prints 5t
-print h:x;      // prints Hello, world!5
 ````
 Newlines and tabs can be escaped in printed strings via `\n` and `\t`.
 ````
