@@ -217,6 +217,8 @@ int getvar_boolean_fv(var *find) {
     if (find == NULL) return 0;
     else if (find->type == NOTHING) return 0;
     else if (find->type == BOOLEAN && find->content.i == 0) return 0;
+    else if (find->type == INT && find->content.i == 0) return 0;
+    else if (find->type == DOUBLE && find->content.d == 0) return 0;
     else return 1;
 }
 
@@ -726,6 +728,9 @@ var *var_assign(char *name, var *value) {
                 break;
             case BOOLEAN:
                 setvar_boolean_fv(find, getvar_boolean_fv(value));
+                break;
+            case NOTHING:
+                make_var_nothing(find);
                 break;
             default:
                 setvar_int_fv(find, getvar_int_fv(value));
