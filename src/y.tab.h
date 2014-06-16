@@ -71,10 +71,11 @@ extern int yydebug;
      OR = 280,
      NOT = 281,
      XOR = 282,
-     NAME = 283,
-     INTEGER = 284,
-     STRLIT = 285,
-     FLOAT = 286
+     UNARY_MINUS = 283,
+     NAME = 284,
+     INTEGER = 285,
+     STRLIT = 286,
+     FLOAT = 287
    };
 #endif
 /* Tokens.  */
@@ -103,10 +104,11 @@ extern int yydebug;
 #define OR 280
 #define NOT 281
 #define XOR 282
-#define NAME 283
-#define INTEGER 284
-#define STRLIT 285
-#define FLOAT 286
+#define UNARY_MINUS 283
+#define NAME 284
+#define INTEGER 285
+#define STRLIT 286
+#define FLOAT 287
 
 
 
@@ -114,7 +116,7 @@ extern int yydebug;
 typedef union YYSTYPE
 {
 /* Line 2053 of yacc.c  */
-#line 46 "grammar.y"
+#line 47 "grammar.y"
 
     int i;
     char *s;
@@ -123,7 +125,7 @@ typedef union YYSTYPE
 
 
 /* Line 2053 of yacc.c  */
-#line 127 "y.tab.h"
+#line 129 "y.tab.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

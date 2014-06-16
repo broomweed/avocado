@@ -42,6 +42,7 @@ ast_node *root;
 
 %token TOKVAR TOKPRINT TOKIF TOKELSE TOKNOTHING TOKTRUE TOKFALSE TOKWHILE TOKDEF
 %token EQ LTEQ GTEQ LT GT NE SEQ SLTEQ SGTEQ SLT SGT SNE AND OR NOT XOR
+%token UNARY_MINUS
 %union
 {
     int i;
@@ -63,12 +64,19 @@ ast_node *root;
 %type <n> assignment
 %type <n> declare
 %type <n> newvar
-%type <n> strexpr
 %type <n> expr
-%type <n> term
-%type <n> factor
 %type <n> varname
 %type <n> varnamestr
+
+%left AND OR NOT XOR
+%left '<' '>' EQ LTEQ GTEQ LT GT NE SEQ SLTEQ SGTEQ SLT SGT SNE
+%left ':'
+%right '^'
+%left '*' '/'
+%left '+' '-'
+%left UNARY_MINUS
+/* expect 1, for the dangling-else ambiguity */
+%expect 1
 %%
 program: statementlist {
         if (debug) printf(". }\n");
@@ -140,12 +148,12 @@ test:
         $$ = node(STR_LTEQ, $1, $3);
     } | test SGTEQ subtest {
         $$ = node(STR_GTEQ, $1, $3);
-    } | strexpr {
+    } | expr {
         $$ = $1;
     }
 
 subtest:
-    strexpr {
+    expr {
         $$ = $1;
     } | '!' subtest {
         $$ = node(BNOT, $2, NULL);
@@ -160,14 +168,14 @@ statement:
         $$ = $1;
     } | declare ';' {
         $$ = $1;
-    } | TOKPRINT strexpr ';' {
+    } | TOKPRINT expr ';' {
         $$ = node(PRINT, $2, NULL);
     } | qualifiedblock {
         $$ = $1;
     }
 
 assignment:
-    varnamestr '=' strexpr {
+    varnamestr '=' expr {
         $$ = node(ASSIGN, $1, $3);
     }
 
@@ -177,65 +185,52 @@ newvar:
     }
 
 declare:
-    TOKVAR varnamestr '=' strexpr {
+    TOKVAR varnamestr '=' expr {
         $$ = node(CREATE, $2, $4);
     }
 
 varnamestr:
     NAME {
         $$ = node_str($1);
-    } | '`' strexpr '`' {
+    } | '`' expr '`' {
         $$ = node(VARNAME, $2, NULL);
     }
 
 varname:
     NAME {
         $$ = node_name($1);
-    } | '`' strexpr '`' {
+    } | '`' expr '`' {
         $$ = node(VARNAME, $2, NULL);
     }
 
-strexpr:
-    strexpr ':' expr {
-        $$ = node(CONCAT, $1, $3);
-    } | expr {
-        $$ = $1;
-    }
-
 expr:
-    expr '+' term {
+    expr ':' expr {
+        $$ = node(CONCAT, $1, $3);
+    } | expr '+' expr {
         $$ = node(ADD, $1, $3);
-    } | expr '-' term {
+    } | expr '-' expr {
         $$ = node(SUB, $1, $3);
-    } | term {
-        $$ = $1;
+    } | expr '*' expr {
+        $$ = node(MUL, $1, $3);
+    } | expr '/' expr {
+        $$ = node(DIV, $1, $3);
+    } | '-' expr %prec UNARY_MINUS {
+        $$ = node(SUB, node_int(0), $2);
+    } | '(' expr ')' {
+        $$ = $2;
     } | STRLIT {
         $$ = node_str($1);
+    } | varname {
+        $$ = $1;
+    } | INTEGER {
+        $$ = node_int($1);
+    } | FLOAT {
+        $$ = node_dbl($1);
     } | TOKNOTHING {
         $$ = node_nothing();
     } | TOKTRUE {
         $$ = node_boolean(1);
     } | TOKFALSE {
         $$ = node_boolean(0);
-    }
-
-term:
-    term '*' factor {
-        $$ = node(MUL, $1, $3);
-    } | term '/' factor {
-        $$ = node(DIV, $1, $3);
-    } | factor {
-        $$ = $1;
-    }
-
-factor:
-    varname {
-        $$ = $1;
-    } | INTEGER {
-        $$ = node_int($1);
-    } | FLOAT {
-        $$ = node_dbl($1);
-    } | '(' expr ')' {
-        $$ = $2;
     }
 %%

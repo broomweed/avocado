@@ -294,7 +294,7 @@ var *ast_eval_expr(ast_node *node) {
         default:
             if (debug) printf("...\n");
             if (node->content.children.lhs == NULL) {
-                printf("!!!");
+                printf("!!!\n");
                 return NULL;
             }
             lh = ast_eval_expr(node->content.children.lhs);
@@ -416,7 +416,10 @@ ast_node *node_nothing() {
 }
 
 void free_node(ast_node *node) {
-    if (node == NULL) return;
+    if (node == NULL) {
+        if (debug) printf("But it is null.\n");
+        return;
+    }
     if (debug) printf("Freeing node. Op: %c\n", node->op);
     if (node->op == TERMSTR || node->op == TERMNAME) {
         if (node->content.termstr != NULL) {
