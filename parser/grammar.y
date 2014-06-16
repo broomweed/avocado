@@ -56,9 +56,6 @@ ast_node *root;
 %token <d> FLOAT
 %type <n> statementlist
 %type <n> block
-%type <n> cond
-%type <n> test
-%type <n> subtest
 %type <n> qualifiedblock
 %type <n> statement
 %type <n> assignment
@@ -70,6 +67,7 @@ ast_node *root;
 
 %left AND OR NOT XOR
 %left '<' '>' EQ LTEQ GTEQ LT GT NE SEQ SLTEQ SGTEQ SLT SGT SNE
+%left '!'
 %left ':'
 %right '^'
 %left '*' '/'
@@ -102,63 +100,14 @@ block:
     }
 
 qualifiedblock:
-    TOKIF cond block {
+    TOKIF expr block {
         $$ = node(IF, $2, node(IFELSE, $3, NULL));
-    } | TOKIF cond block TOKELSE qualifiedblock {
+    } | TOKIF expr block TOKELSE qualifiedblock {
         $$ = node(IF, $2, node(IFELSE, $3, $5));
-    } | TOKWHILE cond block {
+    } | TOKWHILE expr block {
         $$ = node(WHILE, $2, $3);
     } | block {
         $$ = $1;
-    }
-
-cond:
-    cond AND test {
-        $$ = node(BAND, $1, $3);
-    } | cond OR test {
-        $$ = node(BOR, $1, $3);
-    } | cond XOR test {
-        $$ = node(BXOR, $1, $3);
-    } | test {
-        $$ = $1;
-    }
-
-test:
-    test '>' subtest {
-        $$ = node(NUM_GT, $1, $3);
-    } | test '<' subtest {
-        $$ = node(NUM_LT, $1, $3);
-    } | test EQ subtest {
-        $$ = node(NUM_EQ, $1, $3);
-    } | test LTEQ subtest {
-        $$ = node(NUM_LTEQ, $1, $3);
-    } | test GTEQ subtest {
-        $$ = node(NUM_GTEQ, $1, $3);
-    } | test NE subtest {
-        $$ = node(NUM_NE, $1, $3);
-    } | test SGT subtest {
-        $$ = node(STR_GT, $1, $3);
-    } | test SLT subtest {
-        $$ = node(STR_LT, $1, $3);
-    } | test SEQ subtest {
-        $$ = node(STR_EQ, $1, $3);
-    } | test SNE subtest {
-        $$ = node(STR_NE, $1, $3);
-    } | test SLTEQ subtest {
-        $$ = node(STR_LTEQ, $1, $3);
-    } | test SGTEQ subtest {
-        $$ = node(STR_GTEQ, $1, $3);
-    } | expr {
-        $$ = $1;
-    }
-
-subtest:
-    expr {
-        $$ = $1;
-    } | '!' subtest {
-        $$ = node(BNOT, $2, NULL);
-    } | '(' cond ')' {
-        $$ = $2;
     }
 
 statement:
@@ -204,7 +153,39 @@ varname:
     }
 
 expr:
-    expr ':' expr {
+    expr AND expr {
+        $$ = node(BAND, $1, $3);
+    } | expr OR expr {
+        $$ = node(BOR, $1, $3);
+    } | expr XOR expr {
+        $$ = node(BXOR, $1, $3);
+    } | '!' expr {
+        $$ = node(BNOT, $2, NULL);
+    } | expr '>' expr {
+        $$ = node(NUM_GT, $1, $3);
+    } | expr '<' expr {
+        $$ = node(NUM_LT, $1, $3);
+    } | expr EQ expr {
+        $$ = node(NUM_EQ, $1, $3);
+    } | expr LTEQ expr {
+        $$ = node(NUM_LTEQ, $1, $3);
+    } | expr GTEQ expr {
+        $$ = node(NUM_GTEQ, $1, $3);
+    } | expr NE expr {
+        $$ = node(NUM_NE, $1, $3);
+    } | expr SGT expr {
+        $$ = node(STR_GT, $1, $3);
+    } | expr SLT expr {
+        $$ = node(STR_LT, $1, $3);
+    } | expr SEQ expr {
+        $$ = node(STR_EQ, $1, $3);
+    } | expr SNE expr {
+        $$ = node(STR_NE, $1, $3);
+    } | expr SLTEQ expr {
+        $$ = node(STR_LTEQ, $1, $3);
+    } | expr SGTEQ expr {
+        $$ = node(STR_GTEQ, $1, $3);
+    } | expr ':' expr {
         $$ = node(CONCAT, $1, $3);
     } | expr '+' expr {
         $$ = node(ADD, $1, $3);
