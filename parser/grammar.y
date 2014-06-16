@@ -69,12 +69,11 @@ ast_node *root;
 %left '<' '>' EQ LTEQ GTEQ LT GT NE SEQ SLTEQ SGTEQ SLT SGT SNE
 %left '!'
 %left ':'
-%right '^'
-%left '*' '/'
 %left '+' '-'
+%left '*' '/'
+%right '^'
 %left UNARY_MINUS
-/* expect 1, for the dangling-else ambiguity */
-%expect 1
+/* don't expect 1...? investigate */
 %%
 program: statementlist {
         if (debug) printf(". }\n");

@@ -60,7 +60,6 @@ var *vars_quotient(var *v1, var *v2);
 var *vars_concat(var *v1, var *v2);
 var *vars_cmp(var *v1, var *v2, enum asttypes type);
 
-void print_var(char *str);
 char *str_dup(char *str);
 
 void setvar_str(char *name, char *val) {
@@ -329,7 +328,7 @@ var *ast_eval_expr(ast_node *node) {
             var_assign(getvar_str_fv(lh), rh);
             break;
         case PRINT:
-            print_var(getvar_str_fv(lh));
+            printf("%s", getvar_str_fv(lh));
             break;
         case VARNAME:
             to_ret = find_var(getvar_str_fv(lh));
@@ -794,46 +793,62 @@ var *var_assign(char *name, var *value) {
     return find;
 }
 
-void print_var(char *str) {
-    int i = 0;
-    char last = '\0';
-    while (str[i]) {
-        if (last != '\\') {
-            if (str[i] != '\\') {
-                putchar(str[i]);
-            }
-        } else {
-            switch(str[i]) {
-                case 'n':
-                    putchar('\n');
-                    break;
-                case 't':
-                    putchar('\t');
-                    break;
-                case 'r':
-                    putchar('\r');
-                    break;
-                case '\'':
-                    putchar('\'');
-                    break;
-                case '"':
-                    putchar('"');
-                    break;
-                case '\\':
-                    putchar('\\');
-                    break;
-                default:
-                    putchar(str[i]);
-            }
-        }
-        last = str[i];
-        i++;
-    }
-}
-
 char *str_dup(char *str) {
     char *to_ret = malloc ((strlen(str)+1) * sizeof(char));
     if (to_ret == NULL) return to_ret;
     strcpy(to_ret, str);
     return to_ret;
+}
+
+/* Replaces characters with backslashes in front (\n, \t, \\, etc.)
+   with their actual escape sequence equivalent (newline, tab, \, etc.) */
+char *escape_chars(char *str) {
+    /* this might waste a bit of space, but we know the new string will always
+       be at most as long as the old */
+    char *new = calloc(strlen(str)+1, sizeof(char));
+    if (new != NULL) {
+        int oldIndex = 0;
+        int newIndex = 0;
+        char last = 0;
+        for (oldIndex = 0; str[oldIndex]; oldIndex++) {
+            if (last != '\\') {
+                if (str[oldIndex] != '\\') {
+                    new[newIndex] = str[oldIndex];
+                    newIndex++;
+                }
+            } else {
+                switch (str[oldIndex]) {
+                    case 'n':
+                        new[newIndex] = '\n'; break;
+                    case 'r':
+                        new[newIndex] = '\r'; break;
+                    case 't':
+                        new[newIndex] = '\t'; break;
+                    case 'b':
+                        new[newIndex] = '\b'; break;
+                    case 'a':
+                        new[newIndex] = '\a'; break;
+                    case 'f':
+                        new[newIndex] = '\f'; break;
+                    case 'v':
+                        new[newIndex] = '\v'; break;
+                    case '\'':
+                        new[newIndex] = '\''; break;
+                    case '"':
+                        new[newIndex] = '"'; break;
+                    case '\\':
+                        new[newIndex] = '\\'; break;
+                    default:
+                        fprintf(stderr,
+                            "Unrecognized escape sequence \\%c, interpreting as literal character\n",
+                            str[oldIndex]);
+                        new[newIndex] = str[oldIndex];
+                }
+                newIndex++;
+            }
+            last = str[oldIndex];
+        }
+    }
+    free(str);
+    return new;
 }

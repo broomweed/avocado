@@ -119,3 +119,5 @@ extern var *var_test(var *v);
 extern void print_var(char *str);
 
 extern char *str_dup(char *str);
+
+extern char *escape_chars(char *str);

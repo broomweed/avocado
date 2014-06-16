@@ -947,16 +947,18 @@ YY_RULE_SETUP
 {
     yylval.s = (char*)calloc(strlen(yytext)-1, sizeof(char));
     strncpy(yylval.s, &yytext[1], strlen(yytext)-2);
+    yylval.s = escape_chars(yylval.s);
     return STRLIT;
 }
 	YY_BREAK
 case 28:
 /* rule 28 can match eol */
 YY_RULE_SETUP
-#line 48 "grammar.l"
+#line 49 "grammar.l"
 {
     yylval.s = (char*)calloc(strlen(yytext)-1, sizeof(char));
     strncpy(yylval.s, &yytext[1], strlen(yytext)-2);
+    yylval.s = escape_chars(yylval.s);
     return STRLIT;
 }
 	YY_BREAK
@@ -964,33 +966,33 @@ YY_RULE_SETUP
 case 29:
 /* rule 29 can match eol */
 YY_RULE_SETUP
-#line 54 "grammar.l"
+#line 56 "grammar.l"
 /* ignore */;
 	YY_BREAK
 /* Ignored. */
 case 30:
 YY_RULE_SETUP
-#line 56 "grammar.l"
+#line 58 "grammar.l"
 /* skip whitespace */;
 	YY_BREAK
 case 31:
 /* rule 31 can match eol */
 YY_RULE_SETUP
-#line 57 "grammar.l"
+#line 59 "grammar.l"
 /* ignore newlines */;
 	YY_BREAK
 /* anything else ... */
 case 32:
 YY_RULE_SETUP
-#line 59 "grammar.l"
+#line 61 "grammar.l"
 return *yytext;
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 60 "grammar.l"
+#line 62 "grammar.l"
 ECHO;
 	YY_BREAK
-#line 994 "lex.yy.c"
+#line 996 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1988,7 +1990,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 60 "grammar.l"
+#line 62 "grammar.l"
 
 
 

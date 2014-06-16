@@ -43,11 +43,13 @@ xor                     return XOR;
 \'(\\.|[^'])*\' {
     yylval.s = (char*)calloc(strlen(yytext)-1, sizeof(char));
     strncpy(yylval.s, &yytext[1], strlen(yytext)-2);
+    yylval.s = escape_chars(yylval.s);
     return STRLIT;
 }
 \"(\\.|[^"])*\" {
     yylval.s = (char*)calloc(strlen(yytext)-1, sizeof(char));
     strncpy(yylval.s, &yytext[1], strlen(yytext)-2);
+    yylval.s = escape_chars(yylval.s);
     return STRLIT;
 }
   /* Comments. */
