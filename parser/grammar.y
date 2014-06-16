@@ -73,7 +73,8 @@ ast_node *root;
 %left '*' '/'
 %right '^'
 %left UNARY_MINUS
-/* don't expect 1...? investigate */
+/* expect 1 for the dangling else ambiguity */
+%expect 1
 %%
 program: statementlist {
         if (debug) printf(". }\n");
@@ -99,11 +100,11 @@ block:
     }
 
 qualifiedblock:
-    TOKIF expr block {
+    TOKIF expr statement {
         $$ = node(IF, $2, node(IFELSE, $3, NULL));
-    } | TOKIF expr block TOKELSE qualifiedblock {
+    } | TOKIF expr statement TOKELSE statement {
         $$ = node(IF, $2, node(IFELSE, $3, $5));
-    } | TOKWHILE expr block {
+    } | TOKWHILE expr statement {
         $$ = node(WHILE, $2, $3);
     } | block {
         $$ = $1;
