@@ -201,6 +201,9 @@ char *getvar_str_fv(var *find) {
                 sprintf(strtoret, "false");
         }
     }
+    if (find->str_equiv) {
+        free(find->str_equiv);
+    }
     find->str_equiv = strtoret;
     return strtoret;
 }
@@ -244,7 +247,7 @@ var *find_var(char *name) {
 var *ast_eval_expr(ast_node *node) {
     var *lh, *rh, *to_ret;
     if (node == NULL) return NULL;
-    if (debug) printf("Evaluating AST node: `%c`: ", node->op);
+    if (debug) printf("NODE: %c\t\t: ", node->op);
     switch(node->op) {
         /* These operations do not act directly on variables. */
         case TERMINT:
@@ -276,19 +279,27 @@ var *ast_eval_expr(ast_node *node) {
             ast_eval_expr(node->content.children.rhs);
             return NULL;
         case IF:
+            /* The control flow constructs go here because they need control over
+               which/how many times to evaluate a node, rather than evaluating both
+               and doing something to them. */
             if (debug) printf("If.\n");
-            // dang, bro
-            if (getvar_boolean_fv(ast_eval_expr(node->content.children.lhs))) {
+            lh = ast_eval_expr(node->content.children.lhs);
+            if (getvar_boolean_fv(lh)) {
                 ast_eval_expr(node->content.children.rhs->content.children.lhs);
             } else {
                 ast_eval_expr(node->content.children.rhs->content.children.rhs);
             }
+            if (lh->name[0] == '\0') free_var(lh);
             return NULL;
         case WHILE:
             if (debug) printf("While.\n");
-            while (getvar_boolean_fv(ast_eval_expr(node->content.children.lhs))) {
+            lh = ast_eval_expr(node->content.children.lhs);
+            while (getvar_boolean_fv(lh)) {
                 ast_eval_expr(node->content.children.rhs);
+                if (lh->name[0] == '\0') free_var(lh);
+                lh = ast_eval_expr(node->content.children.lhs);
             }
+            if (lh->name[0] == '\0') free_var(lh);
             return NULL;
         default:
             if (debug) printf("...\n");
@@ -337,6 +348,7 @@ var *ast_eval_expr(ast_node *node) {
                 to_ret = newvar_int(0);
             }
             break;
+        /* COMPARISONS */
         case NUM_GT:
         case NUM_LT:
         case NUM_GTEQ:
@@ -759,13 +771,13 @@ var *vars_cmp(var *v1, var *v2, enum asttypes type) {
 }
 
 var *var_assign(char *name, var *value) {
-    if (debug) printf("Looking for variable %s...", name);
+    if (debug) printf("VAR:    %8s: ", name);
     var *find = find_var(name);
     if (find == NULL) {
         printf("--!-- %s: no such variable\n", name);
         return NULL;
     }
-    if (debug) printf("It's located at %p.\n", (void*)find);
+    if (debug) printf("%p.\n", (void*)find);
     if (value != NULL) {
         switch (value->type) {
             case STRING:

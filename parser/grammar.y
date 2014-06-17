@@ -24,12 +24,18 @@ int main(int argc, char **argv) {
             debug = 1;
             yyin = fopen(argv[2], "r");
         } else {
-            printf("Unrecognized flag %s", argv[1]);
+            fprintf(stderr, "Unrecognized flag %s\n", argv[1]);
             return 1;
         }
     } else {
         printf("usage: %s [-d] <file>\n", argv[0]);
         printf("\t-d:\trun in debug mode\n");
+        return 1;
+    }
+    if (!yyin) {
+        fprintf(stderr,
+                "Couldn't open file %s. Are you sure it exists?\n",
+                argv[argc-1]);
         return 1;
     }
     yyparse();
