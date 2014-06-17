@@ -15,6 +15,16 @@ typedef struct var {
     char *str_equiv;
 } var;
 
+/* A linked list of nested scopes. This
+   struct represents a single scope. */
+typedef struct scope {
+    struct scope *outer;
+    var *vars;
+} scope;
+
+extern scope *outermost;
+extern scope *current_scope;
+
 enum asttypes {
     ADD = '+',
     SUB = '-',
@@ -23,7 +33,7 @@ enum asttypes {
     CONCAT = ':',
     CREATE = 'v',
     ASSIGN = '_',
-    BLOCK = '}',
+    MULTI = 'T', // like a linked list
     IF = 'i',
     IFELSE = 'e',
     WHILE = 'w',
@@ -51,6 +61,7 @@ enum asttypes {
     TERMNAME = 'N',
     TERMBOOLEAN = 'B',
     EMPTY = ' ',
+    ENCLOSED_SCOPE = '{',
 };
 
 typedef struct ast_node {
@@ -121,3 +132,6 @@ extern void print_var(char *str);
 extern char *str_dup(char *str);
 
 extern char *escape_chars(char *str);
+
+extern void new_scope();
+extern void pop_scope();

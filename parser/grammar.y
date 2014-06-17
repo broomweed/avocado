@@ -7,6 +7,9 @@ FILE *yyin;
 extern int yychar;
 int debug;
 
+scope *outermost;
+scope *current_scope;
+
 void yyerror(const char *str) {
     fprintf(stderr, "error: %s -- unexpected '%c'\n", str, yychar);
 }
@@ -38,6 +41,10 @@ int main(int argc, char **argv) {
                 argv[argc-1]);
         return 1;
     }
+    outermost = malloc(sizeof(scope));
+    outermost->vars = NULL;
+    current_scope = outermost;
+    if (debug) printf("==== PARSING PHASE ====\n");
     yyparse();
     return 0;
 }
@@ -83,26 +90,27 @@ ast_node *root;
 %expect 1
 %%
 program: statementlist {
-        if (debug) printf(". }\n");
         root = $1;
+        if (debug) printf("==== EVALUATION PHASE ====\n");
         if (debug) printf("Evaluating root AST node...\n");
         ast_eval_expr(root);
         if (debug) printf("\ndone.\n");
         fclose(yyin);
+        if (debug) printf("==== CLEANUP PHASE ====\n");
         cleanup();
     }
 
 statementlist: statement {
-        if (debug) printf("{ %c\n", $1->op);
+        if (debug) printf(": %c\n", $1->op);
         $$ = $1;
     } | statementlist statement {
         if (debug) printf(". %c\n", $2->op);
-        $$ = node(BLOCK, $1, $2);
+        $$ = node(MULTI, $1, $2);
     }
 
 block:
     '{' statementlist '}' {
-        $$ = $2;
+        $$ = node(ENCLOSED_SCOPE, $2, NULL);
     }
 
 qualifiedblock:

@@ -4,7 +4,8 @@
 #include "uthash.h"
 #include "avocado.h"
 
-var *vars = NULL;
+extern scope *outermost;
+extern scope *current_scope;
 
 /* var-setting by name */
 void setvar_str(char *name, char *val);
@@ -234,13 +235,21 @@ var *addvar(char *name) {
     strncpy(to_add->name, name, 64);
     to_add->type = UNDEFINED;
     to_add->str_equiv = NULL;
-    HASH_ADD_STR(vars, name, to_add);
+    HASH_ADD_STR(current_scope->vars, name, to_add);
     return to_add;
 }
 
 var *find_var(char *name) {
-    var *found;
-    HASH_FIND_STR(vars, name, found);
+    var *found = NULL;
+    scope *searching_in = current_scope;
+    if (!searching_in && debug) {
+        fprintf(stderr, "what??\n");
+        return NULL;
+    }
+    do {
+        HASH_FIND_STR(searching_in->vars, name, found);
+        searching_in = searching_in->outer;
+    } while (found == NULL && searching_in != NULL);
     return found;
 }
 
@@ -273,11 +282,17 @@ var *ast_eval_expr(ast_node *node) {
         case TERMBOOLEAN:
             if (debug) printf("it's a boolean!\n");
             return newvar_boolean(node->content.termint);
-        case BLOCK:
+        case ENCLOSED_SCOPE:
+            if (debug) printf("{{{\n");
+            new_scope();
+            lh = ast_eval_expr(node->content.children.lhs);
+            if (debug) printf("SCOPE END       : }}}\n");
+            pop_scope();
+            return lh;
+        case MULTI:
             if (debug) printf("BLOCK...\n");
             ast_eval_expr(node->content.children.lhs);
-            ast_eval_expr(node->content.children.rhs);
-            return NULL;
+            return ast_eval_expr(node->content.children.rhs);
         case IF:
             /* The control flow constructs go here because they need control over
                which/how many times to evaluate a node, rather than evaluating both
@@ -349,6 +364,7 @@ var *ast_eval_expr(ast_node *node) {
             }
             break;
         /* COMPARISONS */
+        /* ... are handled by a different function because they're tedious and long */
         case NUM_GT:
         case NUM_LT:
         case NUM_GTEQ:
@@ -466,11 +482,12 @@ void free_var(var *to_free) {
 
 void cleanup() {
     var *to_del, *tmp;
-    HASH_ITER(hh, vars, to_del, tmp) {
-        HASH_DEL(vars, to_del);
+    HASH_ITER(hh, current_scope->vars, to_del, tmp) {
+        HASH_DEL(current_scope->vars, to_del);
         free_var(to_del);
     }
     free_node(root);
+    free(current_scope);
 }
 
 var *newvar_int(int val) {
@@ -863,4 +880,27 @@ char *escape_chars(char *str) {
     }
     free(str);
     return new;
+}
+
+void new_scope() {
+    scope *new_scope = malloc(sizeof(scope));
+    new_scope->outer = current_scope;
+    new_scope->vars = NULL;
+    current_scope = new_scope;
+}
+
+void pop_scope() {
+    scope *next = current_scope->outer;
+    var *to_del, *tmp;
+    /* clear out all the variables */
+    HASH_ITER(hh, current_scope->vars, to_del, tmp) {
+        HASH_DEL(current_scope->vars, to_del);
+        free_var(to_del);
+    }
+    if (current_scope == NULL) {
+        printf("We have reached the end??");
+        exit(0);
+    }
+    free(current_scope);
+    current_scope = next;
 }
