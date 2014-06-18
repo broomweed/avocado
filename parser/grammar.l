@@ -33,6 +33,12 @@ le                      return SLTEQ;
 \|\||or                 return OR;
 !|not                   return NOT;
 xor                     return XOR;
+\+\+                    return INCR;
+--                      return DECR;
+\+=                     return PLUSEQUALS;
+-=                      return MINUSEQUALS;
+\*=                     return TIMESEQUALS;
+\/=                     return DIVEQUALS;
   /* Words. */
 [0-9]+                  yylval.i=atoi(yytext); return INTEGER;
 [0-9]+\.[0-9]+([Ee][0-9]+)? {

@@ -4,8 +4,7 @@
 enum vartypes {INT, DOUBLE, STRING, BOOLEAN, UNDEFINED, NOTHING};
 
 typedef struct var {
-    UT_hash_handle hh;
-    char name[64];
+    int bound;
     enum vartypes type;
     union content {
         int i;
@@ -15,11 +14,20 @@ typedef struct var {
     char *str_equiv;
 } var;
 
+/* This binds a name to a variable in a scope. */
+typedef struct binding {
+    UT_hash_handle hh;
+    char name[64];
+    var *var;
+} binding;
+
 /* A linked list of nested scopes. This
    struct represents a single scope. */
 typedef struct scope {
+    /* This is the scope's enclosing scope. */
     struct scope *outer;
-    var *vars;
+    /* This represents the bindings for the scope. */
+    binding *vars;
 } scope;
 
 extern scope *outermost;

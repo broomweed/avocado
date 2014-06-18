@@ -43,6 +43,7 @@ int main(int argc, char **argv) {
     }
     outermost = malloc(sizeof(scope));
     outermost->vars = NULL;
+    outermost->outer = NULL;
     current_scope = outermost;
     if (debug) printf("==== PARSING PHASE ====\n");
     yyparse();
@@ -55,6 +56,7 @@ ast_node *root;
 
 %token TOKVAR TOKPRINT TOKIF TOKELSE TOKNOTHING TOKTRUE TOKFALSE TOKWHILE TOKDEF
 %token EQ LTEQ GTEQ LT GT NE SEQ SLTEQ SGTEQ SLT SGT SNE AND OR NOT XOR
+%token INCR DECR PLUSEQUALS MINUSEQUALS TIMESEQUALS DIVEQUALS
 %token UNARY_MINUS
 %union
 {
@@ -71,12 +73,14 @@ ast_node *root;
 %type <n> block
 %type <n> qualifiedblock
 %type <n> statement
+%type <n> singlestatement
 %type <n> assignment
 %type <n> declare
 %type <n> newvar
 %type <n> expr
 %type <n> varname
-%type <n> varnamestr
+%type <n> newvarname
+%type <n> reassigner
 
 %left AND OR NOT XOR
 %left '<' '>' EQ LTEQ GTEQ LT GT NE SEQ SLTEQ SGTEQ SLT SGT SNE
@@ -87,7 +91,7 @@ ast_node *root;
 %right '^'
 %left UNARY_MINUS
 /* expect 1 for the dangling else ambiguity */
-%expect 1
+/*%expect 1*/
 %%
 program: statementlist {
         root = $1;
@@ -125,34 +129,41 @@ qualifiedblock:
     }
 
 statement:
-    assignment ';' {
+    singlestatement ';' {
         $$ = $1;
-    } | newvar ';' {
-        $$ = $1;
-    } | declare ';' {
-        $$ = $1;
-    } | TOKPRINT expr ';' {
-        $$ = node(PRINT, $2, NULL);
     } | qualifiedblock {
         $$ = $1;
     }
 
+singlestatement:
+    assignment {
+        $$ = $1;
+    } | reassigner {
+        $$ = $1;
+    } | newvar {
+        $$ = $1;
+    } | declare {
+        $$ = $1;
+    } | TOKPRINT expr {
+        $$ = node(PRINT, $2, NULL);
+    }
+
 assignment:
-    varnamestr '=' expr {
+    newvarname '=' expr {
         $$ = node(ASSIGN, $1, $3);
     }
 
 newvar:
-    TOKVAR varnamestr {
+    TOKVAR newvarname {
         $$ = node(CREATE, $2, NULL);
     }
 
 declare:
-    TOKVAR varnamestr '=' expr {
+    TOKVAR newvarname '=' expr {
         $$ = node(CREATE, $2, $4);
     }
 
-varnamestr:
+newvarname:
     NAME {
         $$ = node_str($1);
     } | '`' expr '`' {
@@ -227,5 +238,20 @@ expr:
         $$ = node_boolean(1);
     } | TOKFALSE {
         $$ = node_boolean(0);
+    }
+
+reassigner:
+    newvarname INCR {
+        $$ = node(ASSIGN, $1, node(ADD, node(VARNAME, $1, NULL), node_int(1)));
+    } | newvarname DECR {
+        $$ = node(ASSIGN, $1, node(SUB, node(VARNAME, $1, NULL), node_int(1)));
+    } | newvarname PLUSEQUALS expr {
+        $$ = node(ASSIGN, $1, node(ADD, node(VARNAME, $1, NULL), $3));
+    } | newvarname MINUSEQUALS expr {
+        $$ = node(ASSIGN, $1, node(SUB, node(VARNAME, $1, NULL), $3));
+    } | newvarname TIMESEQUALS expr {
+        $$ = node(ASSIGN, $1, node(MUL, node(VARNAME, $1, NULL), $3));
+    } | newvarname DIVEQUALS expr {
+        $$ = node(ASSIGN, $1, node(DIV, node(VARNAME, $1, NULL), $3));
     }
 %%

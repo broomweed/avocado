@@ -43,6 +43,7 @@ ast_node *node_nothing();
 void free_node(ast_node *node);
 var *alloc_var();
 void free_var(var *to_free);
+void unbind(binding *to_free);
 void cleanup();
 
 /* new-var code */
@@ -52,6 +53,7 @@ var *newvar_dbl(double val);
 var *newvar_boolean(int val);
 var *newvar_nothing();
 var *var_assign(char *name, var *value);
+var *var_assign_fv(var *new, var *value);
 
 /* var arithmetic/operators */
 var *vars_sum(var *v1, var *v2);
@@ -228,19 +230,22 @@ int getvar_boolean_fv(var *find) {
 
 var *addvar(char *name) {
     var *to_add = (var*)malloc(sizeof(var));
+    binding *new_binding = malloc(sizeof(binding));
     if (to_add == NULL) {
         printf("Couldn't create variable %s: out of memory!\n", name);
         return NULL;
     }
-    strncpy(to_add->name, name, 64);
+    strncpy(new_binding->name, name, 64);
+    new_binding->var = to_add;
     to_add->type = UNDEFINED;
     to_add->str_equiv = NULL;
-    HASH_ADD_STR(current_scope->vars, name, to_add);
+    to_add->bound = 1;
+    HASH_ADD_STR(current_scope->vars, name, new_binding);
     return to_add;
 }
 
 var *find_var(char *name) {
-    var *found = NULL;
+    binding *found = NULL;
     scope *searching_in = current_scope;
     if (!searching_in && debug) {
         fprintf(stderr, "what??\n");
@@ -250,11 +255,15 @@ var *find_var(char *name) {
         HASH_FIND_STR(searching_in->vars, name, found);
         searching_in = searching_in->outer;
     } while (found == NULL && searching_in != NULL);
-    return found;
+    if (found != NULL) {
+        return found->var;
+    } else {
+        return NULL;
+    }
 }
 
 var *ast_eval_expr(ast_node *node) {
-    var *lh, *rh, *to_ret;
+    var *lh, *rh, *to_ret, *new;
     if (node == NULL) return NULL;
     if (debug) printf("NODE: %c\t\t: ", node->op);
     switch(node->op) {
@@ -304,17 +313,17 @@ var *ast_eval_expr(ast_node *node) {
             } else {
                 ast_eval_expr(node->content.children.rhs->content.children.rhs);
             }
-            if (lh->name[0] == '\0') free_var(lh);
+            if (!lh->bound) free_var(lh);
             return NULL;
         case WHILE:
             if (debug) printf("While.\n");
             lh = ast_eval_expr(node->content.children.lhs);
             while (getvar_boolean_fv(lh)) {
                 ast_eval_expr(node->content.children.rhs);
-                if (lh->name[0] == '\0') free_var(lh);
+                if (!lh->bound) free_var(lh);
                 lh = ast_eval_expr(node->content.children.lhs);
             }
-            if (lh->name[0] == '\0') free_var(lh);
+            if (!lh->bound) free_var(lh);
             return NULL;
         default:
             if (debug) printf("...\n");
@@ -345,13 +354,18 @@ var *ast_eval_expr(ast_node *node) {
             break;
         /* VARS */
         case CREATE:
-            addvar(getvar_str_fv(lh));
+            new = addvar(getvar_str_fv(lh));
             if (rh != NULL) {
-                var_assign(getvar_str_fv(lh), rh);
+                var_assign_fv(new, rh);
             }
             break;
         case ASSIGN:
-            var_assign(getvar_str_fv(lh), rh);
+            new = find_var(getvar_str_fv(lh));
+            if (new == NULL) {
+                printf("--!-- %s: no such variable\n", getvar_str_fv(lh));
+            } else {
+                var_assign_fv(find_var(getvar_str_fv(lh)), rh);
+            }
             break;
         case PRINT:
             printf("%s", getvar_str_fv(lh));
@@ -382,9 +396,9 @@ var *ast_eval_expr(ast_node *node) {
         default:
             printf("AST operation `%c` unimplemented", node->op);
     }
-    if (lh->name[0] == '\0') free_var(lh);
+    if (!lh->bound) free_var(lh);
     if (rh != NULL) {
-        if (rh->name[0] == '\0') free_var(rh);
+        if (!rh->bound) free_var(rh);
     }
     return to_ret;
 }
@@ -480,11 +494,21 @@ void free_var(var *to_free) {
     }
 }
 
+void unbind(binding *to_free) {
+    if (to_free != NULL) {
+        if (to_free->var) {
+            free_var(to_free->var);
+            to_free->var = NULL;
+        }
+        free(to_free);
+    }
+}
+
 void cleanup() {
-    var *to_del, *tmp;
+    binding *to_del, *tmp;
     HASH_ITER(hh, current_scope->vars, to_del, tmp) {
         HASH_DEL(current_scope->vars, to_del);
-        free_var(to_del);
+        unbind(to_del);
     }
     free_node(root);
     free(current_scope);
@@ -495,7 +519,7 @@ var *newvar_int(int val) {
     if (t != NULL) {
         t->type = INT;
         t->content.i = val;
-        t->name[0] = '\0';
+        t->bound = 0;
         t->str_equiv = NULL;
     }
     return t;
@@ -506,7 +530,7 @@ var *newvar_dbl(double val) {
     if (t != NULL) {
         t->type = DOUBLE;
         t->content.d = val;
-        t->name[0] = '\0';
+        t->bound = 0;
         t->str_equiv = NULL;
     }
     return t;
@@ -518,7 +542,7 @@ var *newvar_str(char *str) {
         t->type = STRING;
         t->content.s = (char*)malloc(strlen(str)+1);
         strcpy(t->content.s, str);
-        t->name[0] = '\0';
+        t->bound = 0;
         t->str_equiv = NULL;
     }
     return t;
@@ -530,7 +554,7 @@ var *newvar_boolean(int val) {
         t->type = BOOLEAN;
         if (val) t->content.i = 1;
         else t->content.i = 0;
-        t->name[0] = '\0';
+        t->bound = 0;
         t->str_equiv = NULL;
     }
     return t;
@@ -540,7 +564,7 @@ var *newvar_nothing() {
     var *t = alloc_var();
     if (t != NULL) {
         t->type = NOTHING;
-        t->name[0] = '\0';
+        t->bound = 0;
         t->str_equiv = NULL;
     }
     return t;
@@ -821,6 +845,33 @@ var *var_assign(char *name, var *value) {
     }
     return find;
 }
+var *var_assign_fv(var *find, var *value) {
+    if (value != NULL) {
+        switch (value->type) {
+            case STRING:
+                setvar_str_fv(find, getvar_str_fv(value));
+                break;
+            case INT:
+                setvar_int_fv(find, getvar_int_fv(value));
+                break;
+            case DOUBLE:
+                setvar_double_fv(find, getvar_double_fv(value));
+                break;
+            case BOOLEAN:
+                setvar_boolean_fv(find, getvar_boolean_fv(value));
+                break;
+            case NOTHING:
+                make_var_nothing(find);
+                break;
+            default:
+                setvar_int_fv(find, getvar_int_fv(value));
+        }
+    } else {
+        if (debug)printf("...something went wrong\n");
+        setvar_int_fv(find, 0);
+    }
+    return find;
+}
 
 char *str_dup(char *str) {
     char *to_ret = malloc ((strlen(str)+1) * sizeof(char));
@@ -891,16 +942,14 @@ void new_scope() {
 
 void pop_scope() {
     scope *next = current_scope->outer;
-    var *to_del, *tmp;
+    binding *to_del, *tmp;
     /* clear out all the variables */
     HASH_ITER(hh, current_scope->vars, to_del, tmp) {
         HASH_DEL(current_scope->vars, to_del);
-        free_var(to_del);
+        unbind(to_del);
     }
-    if (current_scope == NULL) {
-        printf("We have reached the end??");
-        exit(0);
+    if (current_scope) {
+        free(current_scope);
     }
-    free(current_scope);
     current_scope = next;
 }
