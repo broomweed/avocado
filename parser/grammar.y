@@ -222,6 +222,9 @@ expr:
         $$ = node(DIV, $1, $3);
     } | '-' expr %prec UNARY_MINUS {
         $$ = node(SUB, node_int(0), $2);
+    } | '+' expr %prec UNARY_MINUS {
+        /* this could be useful to convert to number */
+        $$ = node(ADD, node_int(0), $2);
     } | '(' expr ')' {
         $$ = $2;
     } | STRLIT {
@@ -242,16 +245,16 @@ expr:
 
 reassigner:
     newvarname INCR {
-        $$ = node(ASSIGN, $1, node(ADD, node(VARNAME, $1, NULL), node_int(1)));
+        $$ = node(COMPOUND, $1, node(ADD, NULL, node_int(1)));
     } | newvarname DECR {
-        $$ = node(ASSIGN, $1, node(SUB, node(VARNAME, $1, NULL), node_int(1)));
+        $$ = node(COMPOUND, $1, node(SUB, NULL, node_int(1)));
     } | newvarname PLUSEQUALS expr {
-        $$ = node(ASSIGN, $1, node(ADD, node(VARNAME, $1, NULL), $3));
+        $$ = node(COMPOUND, $1, node(ADD, NULL, $3));
     } | newvarname MINUSEQUALS expr {
-        $$ = node(ASSIGN, $1, node(SUB, node(VARNAME, $1, NULL), $3));
+        $$ = node(COMPOUND, $1, node(SUB, NULL, $3));
     } | newvarname TIMESEQUALS expr {
-        $$ = node(ASSIGN, $1, node(MUL, node(VARNAME, $1, NULL), $3));
+        $$ = node(COMPOUND, $1, node(MUL, NULL, $3));
     } | newvarname DIVEQUALS expr {
-        $$ = node(ASSIGN, $1, node(DIV, node(VARNAME, $1, NULL), $3));
+        $$ = node(COMPOUND, $1, node(DIV, NULL, $3));
     }
 %%

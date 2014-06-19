@@ -41,6 +41,7 @@ enum asttypes {
     CONCAT = ':',
     CREATE = 'v',
     ASSIGN = '_',
+    COMPOUND = '\\',
     MULTI = 'T', // like a linked list
     IF = 'i',
     IFELSE = 'e',

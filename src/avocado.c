@@ -295,13 +295,28 @@ var *ast_eval_expr(ast_node *node) {
             if (debug) printf("{{{\n");
             new_scope();
             lh = ast_eval_expr(node->content.children.lhs);
-            if (debug) printf("SCOPE END       : }}}\n");
+            if (debug) printf("SCOPE END\t: }}}\n");
             pop_scope();
             return lh;
         case MULTI:
-            if (debug) printf("BLOCK...\n");
+            if (debug) printf("MULTI...\n");
             ast_eval_expr(node->content.children.lhs);
             return ast_eval_expr(node->content.children.rhs);
+        case COMPOUND:
+            if (debug) printf("compound assignment of:\n");
+            /* compound assignment */
+            /* assign the lhs to the lhs of the other statement (which should be NULL) */
+            node->content.children.rhs->content.children.lhs = node_name(node->content.children.lhs->content.termstr);
+            /* evaluate it and assign the result to the LHS of this statement */
+            lh = ast_eval_expr(node->content.children.lhs);
+            rh = ast_eval_expr(node->content.children.rhs);
+            var_assign(getvar_str_fv(lh), rh);
+            /* set the LHS of the other statement back to null so we don't free the pointer twice */
+            free(node->content.children.rhs->content.children.lhs);
+            free_var(lh);
+            free_var(rh);
+            node->content.children.rhs->content.children.lhs = NULL;
+            return NULL;
         case IF:
             /* The control flow constructs go here because they need control over
                which/how many times to evaluate a node, rather than evaluating both
@@ -368,7 +383,9 @@ var *ast_eval_expr(ast_node *node) {
             }
             break;
         case PRINT:
+            if (debug) printf("-- output: ");
             printf("%s", getvar_str_fv(lh));
+            if (debug) printf(" --\n");
             break;
         case VARNAME:
             to_ret = find_var(getvar_str_fv(lh));
@@ -465,6 +482,9 @@ void free_node(ast_node *node) {
     if (node->op == TERMSTR || node->op == TERMNAME) {
         if (node->content.termstr != NULL) {
             free(node->content.termstr);
+            node->content.termstr = NULL;
+        } else {
+            if (debug) printf("We already freed its string component.\n");
         }
     } else if (node->op != TERMINT && node->op != TERMDBL
             && node->op != TERMBOOLEAN
@@ -845,6 +865,7 @@ var *var_assign(char *name, var *value) {
     }
     return find;
 }
+
 var *var_assign_fv(var *find, var *value) {
     if (value != NULL) {
         switch (value->type) {
