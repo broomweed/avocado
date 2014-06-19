@@ -7,29 +7,36 @@
 extern scope *outermost;
 extern scope *current_scope;
 
+/* ------function prototypes------ */
+
 /* var-setting by name */
 void setvar_str(char *name, char *val);
 void setvar_double(char *name, double val);
 void setvar_int(char *name, int val);
 void setvar_boolean(char *name, int val);
+
 /* var-setting by pointer */
 void setvar_str_fv(var *var, char *val);
 void setvar_double_fv(var *var, double val);
 void setvar_int_fv(var *var, int val);
 void setvar_boolean_fv(var *var, int val);
+
 /* var-getting by name */
 int getvar_int(char *name);
 char *getvar_str(char *name);
 double getvar_double(char *name);
 int getvar_boolean(char *name);
+
 /* var-getting by pointer */
 int getvar_int_fv(var *var);
 char *getvar_str_fv(var *var);
 double getvar_double_fv(var *var);
 int getvar_boolean_fv(var *var);
+
 /* var stuff */
 var *addvar(char *name);
 var *find_var(char *name);
+
 /* ast stuff */
 var *ast_eval_expr(ast_node *node);
 ast_node *node(enum asttypes type, ast_node *lhs, ast_node *rhs);
@@ -39,6 +46,7 @@ ast_node *node_dbl(double val);
 ast_node *node_name(char *val);
 ast_node *node_boolean(int val);
 ast_node *node_nothing();
+
 /* mem stuff */
 void free_node(ast_node *node);
 var *alloc_var();
@@ -63,7 +71,10 @@ var *vars_quotient(var *v1, var *v2);
 var *vars_concat(var *v1, var *v2);
 var *vars_cmp(var *v1, var *v2, enum asttypes type);
 
+/* function that apparently doesn't exist in GNU library */
 char *str_dup(char *str);
+
+/* ------function definitions------ */
 
 void setvar_str(char *name, char *val) {
     var *to_set = find_var(name);

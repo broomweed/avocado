@@ -7,6 +7,9 @@ FILE *yyin;
 extern int yychar;
 int debug;
 
+int yylex(void);
+int yyparse(void);
+
 scope *outermost;
 scope *current_scope;
 
@@ -91,7 +94,7 @@ ast_node *root;
 %right '^'
 %left UNARY_MINUS
 /* expect 1 for the dangling else ambiguity */
-/*%expect 1*/
+%expect 1
 %%
 program: statementlist {
         root = $1;

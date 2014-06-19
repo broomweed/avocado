@@ -537,7 +537,8 @@ char *yytext;
 #include "y.tab.h"
 
 extern FILE * yyin;
-#line 541 "lex.yy.c"
+#define YY_NO_INPUT 1
+#line 542 "lex.yy.c"
 
 #define INITIAL 0
 
@@ -596,8 +597,6 @@ extern int yywrap (void );
 #endif
 #endif
 
-    static void yyunput (int c,char *buf_ptr  );
-    
 #ifndef yytext_ptr
 static void yy_flex_strncpy (char *,yyconst char *,int );
 #endif
@@ -724,10 +723,10 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 10 "grammar.l"
+#line 12 "grammar.l"
 
   /* Tokens. */
-#line 731 "lex.yy.c"
+#line 730 "lex.yy.c"
 
 	if ( !(yy_init) )
 		{
@@ -812,159 +811,159 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 12 "grammar.l"
+#line 14 "grammar.l"
 return TOKVAR;
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 13 "grammar.l"
+#line 15 "grammar.l"
 return TOKPRINT;
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 14 "grammar.l"
+#line 16 "grammar.l"
 return TOKIF;
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 15 "grammar.l"
+#line 17 "grammar.l"
 return TOKELSE;
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 16 "grammar.l"
+#line 18 "grammar.l"
 return TOKWHILE;
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 17 "grammar.l"
+#line 19 "grammar.l"
 return TOKDEF;
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 18 "grammar.l"
+#line 20 "grammar.l"
 return TOKNOTHING;
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 19 "grammar.l"
+#line 21 "grammar.l"
 return TOKTRUE;
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 20 "grammar.l"
+#line 22 "grammar.l"
 return TOKFALSE;
 	YY_BREAK
 /* Multi-char operators. */
 case 10:
 YY_RULE_SETUP
-#line 22 "grammar.l"
+#line 24 "grammar.l"
 return EQ;
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 23 "grammar.l"
+#line 25 "grammar.l"
 return LTEQ;
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 24 "grammar.l"
+#line 26 "grammar.l"
 return GTEQ;
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 25 "grammar.l"
+#line 27 "grammar.l"
 return NE;
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 26 "grammar.l"
+#line 28 "grammar.l"
 return SEQ;
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 27 "grammar.l"
+#line 29 "grammar.l"
 return SGT;
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 28 "grammar.l"
+#line 30 "grammar.l"
 return SLT;
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 29 "grammar.l"
+#line 31 "grammar.l"
 return SNE;
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 30 "grammar.l"
+#line 32 "grammar.l"
 return SGTEQ;
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 31 "grammar.l"
+#line 33 "grammar.l"
 return SLTEQ;
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 32 "grammar.l"
+#line 34 "grammar.l"
 return AND;
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 33 "grammar.l"
+#line 35 "grammar.l"
 return OR;
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 34 "grammar.l"
+#line 36 "grammar.l"
 return NOT;
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 35 "grammar.l"
+#line 37 "grammar.l"
 return XOR;
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 36 "grammar.l"
+#line 38 "grammar.l"
 return INCR;
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 37 "grammar.l"
+#line 39 "grammar.l"
 return DECR;
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 38 "grammar.l"
+#line 40 "grammar.l"
 return PLUSEQUALS;
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 39 "grammar.l"
+#line 41 "grammar.l"
 return MINUSEQUALS;
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 40 "grammar.l"
+#line 42 "grammar.l"
 return TIMESEQUALS;
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 41 "grammar.l"
+#line 43 "grammar.l"
 return DIVEQUALS;
 	YY_BREAK
 /* Words. */
 case 30:
 YY_RULE_SETUP
-#line 43 "grammar.l"
+#line 45 "grammar.l"
 yylval.i=atoi(yytext); return INTEGER;
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 44 "grammar.l"
+#line 46 "grammar.l"
 {
     yylval.d = atof(yytext);
     return FLOAT;
@@ -972,13 +971,13 @@ YY_RULE_SETUP
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 48 "grammar.l"
+#line 50 "grammar.l"
 yylval.s=str_dup(yytext); return NAME;
 	YY_BREAK
 case 33:
 /* rule 33 can match eol */
 YY_RULE_SETUP
-#line 49 "grammar.l"
+#line 51 "grammar.l"
 {
     yylval.s = (char*)calloc(strlen(yytext)-1, sizeof(char));
     strncpy(yylval.s, &yytext[1], strlen(yytext)-2);
@@ -989,7 +988,7 @@ YY_RULE_SETUP
 case 34:
 /* rule 34 can match eol */
 YY_RULE_SETUP
-#line 55 "grammar.l"
+#line 57 "grammar.l"
 {
     yylval.s = (char*)calloc(strlen(yytext)-1, sizeof(char));
     strncpy(yylval.s, &yytext[1], strlen(yytext)-2);
@@ -1001,33 +1000,33 @@ YY_RULE_SETUP
 case 35:
 /* rule 35 can match eol */
 YY_RULE_SETUP
-#line 62 "grammar.l"
+#line 64 "grammar.l"
 /* ignore */;
 	YY_BREAK
 /* Ignored. */
 case 36:
 YY_RULE_SETUP
-#line 64 "grammar.l"
+#line 66 "grammar.l"
 /* skip whitespace */;
 	YY_BREAK
 case 37:
 /* rule 37 can match eol */
 YY_RULE_SETUP
-#line 65 "grammar.l"
+#line 67 "grammar.l"
 /* ignore newlines */;
 	YY_BREAK
 /* anything else ... */
 case 38:
 YY_RULE_SETUP
-#line 67 "grammar.l"
+#line 69 "grammar.l"
 return *yytext;
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 68 "grammar.l"
+#line 70 "grammar.l"
 ECHO;
 	YY_BREAK
-#line 1031 "lex.yy.c"
+#line 1030 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1354,43 +1353,6 @@ static int yy_get_next_buffer (void)
 	yy_is_jam = (yy_current_state == 109);
 
 	return yy_is_jam ? 0 : yy_current_state;
-}
-
-    static void yyunput (int c, register char * yy_bp )
-{
-	register char *yy_cp;
-    
-    yy_cp = (yy_c_buf_p);
-
-	/* undo effects of setting up yytext */
-	*yy_cp = (yy_hold_char);
-
-	if ( yy_cp < YY_CURRENT_BUFFER_LVALUE->yy_ch_buf + 2 )
-		{ /* need to shift things up to make room */
-		/* +2 for EOB chars. */
-		register int number_to_move = (yy_n_chars) + 2;
-		register char *dest = &YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[
-					YY_CURRENT_BUFFER_LVALUE->yy_buf_size + 2];
-		register char *source =
-				&YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[number_to_move];
-
-		while ( source > YY_CURRENT_BUFFER_LVALUE->yy_ch_buf )
-			*--dest = *--source;
-
-		yy_cp += (int) (dest - source);
-		yy_bp += (int) (dest - source);
-		YY_CURRENT_BUFFER_LVALUE->yy_n_chars =
-			(yy_n_chars) = YY_CURRENT_BUFFER_LVALUE->yy_buf_size;
-
-		if ( yy_cp < YY_CURRENT_BUFFER_LVALUE->yy_ch_buf + 2 )
-			YY_FATAL_ERROR( "flex scanner push-back overflow" );
-		}
-
-	*--yy_cp = (char) c;
-
-	(yytext_ptr) = yy_bp;
-	(yy_hold_char) = *yy_cp;
-	(yy_c_buf_p) = yy_cp;
 }
 
 #ifndef YY_NO_INPUT
@@ -2025,7 +1987,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 68 "grammar.l"
+#line 70 "grammar.l"
 
 
 

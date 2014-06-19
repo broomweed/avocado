@@ -7,6 +7,8 @@
 extern FILE * yyin;
 %}
 
+%option nounput
+%option noinput
 %%
   /* Tokens. */
 var                     return TOKVAR;
