@@ -58,8 +58,8 @@ ast_node *root;
 %}
 
 %token TOKVAR TOKPRINT TOKIF TOKELSE TOKNOTHING TOKTRUE TOKFALSE TOKWHILE TOKDEF
-%token EQ LTEQ GTEQ LT GT NE SEQ SLTEQ SGTEQ SLT SGT SNE AND OR NOT XOR
-%token INCR DECR PLUSEQUALS MINUSEQUALS TIMESEQUALS DIVEQUALS
+%token EQ LTEQ GTEQ NE SEQ SLTEQ SGTEQ SLT SGT SNE AND OR NOT XOR
+%token INCR DECR PLUSEQUALS MINUSEQUALS TIMESEQUALS DIVEQUALS CONCATEQUALS
 %token UNARY_MINUS
 %union
 {
@@ -84,14 +84,17 @@ ast_node *root;
 %type <n> varname
 %type <n> newvarname
 %type <n> reassigner
+%type <n> list
+%type <n> comma_exprs
 
 %left AND OR NOT XOR
 %left '<' '>' EQ LTEQ GTEQ LT GT NE SEQ SLTEQ SGTEQ SLT SGT SNE
-%left '!'
 %left ':'
 %left '+' '-'
 %left '*' '/'
 %right '^'
+%left '!'
+%left '['
 %left UNARY_MINUS
 /* expect 1 for the dangling else ambiguity */
 %expect 1
@@ -230,8 +233,12 @@ expr:
         $$ = node(ADD, node_int(0), $2);
     } | '(' expr ')' {
         $$ = $2;
+    } | expr '[' expr ']' {
+        $$ = node(ELEMENT, $1, $3);
     } | STRLIT {
         $$ = node_str($1);
+    } | list {
+        $$ = $1;
     } | varname {
         $$ = $1;
     } | INTEGER {
@@ -244,6 +251,18 @@ expr:
         $$ = node_boolean(1);
     } | TOKFALSE {
         $$ = node_boolean(0);
+    }
+
+list:
+    '[' comma_exprs ']' {
+        $$ = $2;
+    }
+
+comma_exprs:
+    expr {
+        $$ = node(LISTEND, $1, NULL);
+    } | comma_exprs ',' expr {
+        $$ = node(LISTELEM, $3, $1);
     }
 
 reassigner:
@@ -259,5 +278,7 @@ reassigner:
         $$ = node(COMPOUND, $1, node(MUL, NULL, $3));
     } | newvarname DIVEQUALS expr {
         $$ = node(COMPOUND, $1, node(DIV, NULL, $3));
+    } | newvarname CONCATEQUALS expr {
+        $$ = node(COMPOUND, $1, node(CONCAT, NULL, $3));
     }
 %%

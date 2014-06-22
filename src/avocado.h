@@ -1,7 +1,17 @@
 #include <stdio.h>
 #include "uthash.h"
+#pragma once
 
-enum vartypes {INT, DOUBLE, STRING, BOOLEAN, UNDEFINED, NOTHING};
+struct var;
+
+/* A dynamic array. */
+typedef struct list {
+    int max_size;
+    int size;
+    struct var* contents;
+} list;
+
+enum vartypes {INT, DOUBLE, STRING, BOOLEAN, LIST, UNDEFINED, NOTHING};
 
 typedef struct var {
     int bound;
@@ -10,6 +20,7 @@ typedef struct var {
         int i;
         double d;
         char* s;
+        list* l;
     } content;
     char *str_equiv;
 } var;
@@ -39,6 +50,7 @@ enum asttypes {
     MUL = '*',
     DIV = '/',
     CONCAT = ':',
+    ELEMENT = '[',
     CREATE = 'v',
     ASSIGN = '_',
     COMPOUND = '\\',
@@ -64,6 +76,8 @@ enum asttypes {
     STR_NE = 'X',
     PRINT = 'p',
     VARNAME = '`',
+    LISTELEM = ',',
+    LISTEND = '@',
     TERMINT = 'I',
     TERMSTR = 'S',
     TERMDBL = 'D',
@@ -94,16 +108,19 @@ extern void setvar_str_fv(var *var, char *val);
 extern void setvar_double_fv(var *var, double val);
 extern void setvar_int_fv(var *var, int val);
 extern void setvar_boolean_fv(var *var, int val);
+void setvar_list_fv(var *var, list *val);
 
 extern int getvar_int(char *name);
 extern char *getvar_str(char *name);
 extern double getvar_double(char *name);
 extern int getvar_boolean(char *name);
+extern list *getvar_list(char *name);
 
 extern int getvar_int_fv(var *var);
 extern char *getvar_str_fv(var *var);
 extern double getvar_double_fv(var *var);
 extern int getvar_boolean_fv(var *var);
+list *getvar_list_fv(var *var);
 
 extern var *addvar(char *name);
 extern var *find_var(char *name);
@@ -126,8 +143,11 @@ extern var *newvar_int(int val);
 extern var *newvar_str(char *str);
 extern var *newvar_dbl(double val);
 extern var *newvar_boolean(int val);
+extern var *newvar_list(list *val);
+extern var *newvar_empty_list();
 extern var *newvar_nothing();
 extern var *var_assign(char *name, var *value);
+var *var_assign_fv(var *new, var *value);
 
 extern var *vars_sum(var *v1, var *v2);
 extern var *vars_diff(var *v1, var *v2);
@@ -144,3 +164,14 @@ extern char *escape_chars(char *str);
 
 extern void new_scope();
 extern void pop_scope();
+
+/* --- from list.c --- */
+
+extern list *list_push (list* target, var* value);
+extern var *list_pop(list* target);
+extern void list_copy(list* dest, list* src);
+extern var *element_at(list* target, int index);
+extern int set_element(list *target, int index, var *value);
+extern list *alloc_list();
+extern list *alloc_list_size(int size);
+extern void free_list(list *l);

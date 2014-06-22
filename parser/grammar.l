@@ -41,6 +41,7 @@ xor                     return XOR;
 -=                      return MINUSEQUALS;
 \*=                     return TIMESEQUALS;
 \/=                     return DIVEQUALS;
+:=                      return CONCATEQUALS;
   /* Words. */
 [0-9]+                  yylval.i=atoi(yytext); return INTEGER;
 [0-9]+\.[0-9]+([Ee][0-9]+)? {

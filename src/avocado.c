@@ -14,24 +14,28 @@ void setvar_str(char *name, char *val);
 void setvar_double(char *name, double val);
 void setvar_int(char *name, int val);
 void setvar_boolean(char *name, int val);
+void setvar_list(char *name, list *val);
 
 /* var-setting by pointer */
 void setvar_str_fv(var *var, char *val);
 void setvar_double_fv(var *var, double val);
 void setvar_int_fv(var *var, int val);
 void setvar_boolean_fv(var *var, int val);
+void setvar_list_fv(var *var, list *val);
 
 /* var-getting by name */
 int getvar_int(char *name);
 char *getvar_str(char *name);
 double getvar_double(char *name);
 int getvar_boolean(char *name);
+list *getvar_list(char *name);
 
 /* var-getting by pointer */
 int getvar_int_fv(var *var);
 char *getvar_str_fv(var *var);
 double getvar_double_fv(var *var);
 int getvar_boolean_fv(var *var);
+list *getvar_list_fv(var *var);
 
 /* var stuff */
 var *addvar(char *name);
@@ -59,6 +63,8 @@ var *newvar_int(int val);
 var *newvar_str(char *str);
 var *newvar_dbl(double val);
 var *newvar_boolean(int val);
+var *newvar_list(list *val);
+var *newvar_empty_list();
 var *newvar_nothing();
 var *var_assign(char *name, var *value);
 var *var_assign_fv(var *new, var *value);
@@ -118,9 +124,17 @@ void setvar_boolean(char *name, int val) {
     setvar_boolean_fv(to_set, val);
 }
 
+void setvar_list(char *name, list *val) {
+    var *to_set = find_var(name);
+    setvar_list_fv(to_set, val);
+}
+
 void setvar_str_fv(var *to_set, char *val) {
     if (to_set->type == STRING) {
         free(to_set->content.s);
+    }
+    if (to_set->type == LIST) {
+        free_list(to_set->content.l);
     }
     to_set->content.s = (char*)malloc((strlen(val)+1)*sizeof(char));
     strcpy(to_set->content.s, val);
@@ -131,6 +145,9 @@ void setvar_double_fv(var *to_set, double val) {
     if (to_set->type == STRING) {
         free(to_set->content.s);
     }
+    if (to_set->type == LIST) {
+        free_list(to_set->content.l);
+    }
     to_set->content.d = val;
     to_set->type = DOUBLE;
 }
@@ -138,6 +155,9 @@ void setvar_double_fv(var *to_set, double val) {
 void setvar_int_fv(var *to_set, int val) {
     if (to_set->type == STRING) {
         free(to_set->content.s);
+    }
+    if (to_set->type == LIST) {
+        free_list(to_set->content.l);
     }
     to_set->content.i = val;
     to_set->type = INT;
@@ -147,9 +167,24 @@ void setvar_boolean_fv(var *to_set, int val) {
     if (to_set->type == STRING) {
         free(to_set->content.s);
     }
+    if (to_set->type == LIST) {
+        free_list(to_set->content.l);
+    }
     if (val) to_set->content.i = 1;
     else to_set->content.i = 0;
     to_set->type = BOOLEAN;
+}
+
+void setvar_list_fv(var *to_set, list *val) {
+    if (to_set->type == STRING) {
+        free(to_set->content.s);
+    }
+    if (to_set->type == LIST) {
+        free_list(to_set->content.l);
+    }
+    to_set->content.l = alloc_list_size(val->size);
+    list_copy(to_set->content.l, val);
+    to_set->type = LIST;
 }
 
 void make_var_nothing(var *find) {
@@ -188,6 +223,11 @@ int getvar_boolean(char *name) {
     return getvar_boolean_fv(find);
 }
 
+list *getvar_list(char *name) {
+    var *find = find_var(name);
+    return getvar_list_fv(find);
+}
+
 int getvar_int_fv(var *find) {
     if (find == NULL) return 0;
     else if (find->type == INT || find->type == BOOLEAN) return find->content.i;
@@ -197,29 +237,52 @@ int getvar_int_fv(var *find) {
 }
 
 char *getvar_str_fv(var *find) {
-    char *strtoret;
     if (find == NULL) {
         return NULL;
-    } else if (find->type == STRING) {
+    }
+    if (find->str_equiv != NULL) {
+        free(find->str_equiv);
+        find->str_equiv = NULL;
+    }
+    /*} else if (find->type == UNDEFINED) {
+        strtoret = malloc(10*sizeof(char));
+        sprintf(strtoret, "undefined");*/
+    if (find->type == STRING) {
         return find->content.s;
+    } else if (find->type == LIST) {
+        int len = 0;
+        for (int i = 0; i < find->content.l->size; i++) {
+            len += strlen(getvar_str_fv(element_at(find->content.l, i))) + 1;
+        }
+        /* there's no +1 here because it adds +1 for the last space;
+           but we don't put a last space, so we can use that spot
+           for the terminating \0 */
+        find->str_equiv = malloc(len * sizeof(char));
+        len = 0;
+        for (int i = 0; i < find->content.l->size; i++) {
+            if (i == find->content.l->size-1) {
+                sprintf(find->str_equiv + len, "%s", getvar_str_fv(element_at(find->content.l, i)));
+            } else {
+                sprintf(find->str_equiv + len, "%s ", getvar_str_fv(element_at(find->content.l, i)));
+            }
+            len += strlen(getvar_str_fv(element_at(find->content.l, i))) + 1;
+        }
     } else {
-        strtoret = malloc(16*sizeof(char));
+        find->str_equiv = malloc(16*sizeof(char));
         if (find->type == INT) {
-            sprintf(strtoret, "%d", find->content.i);
+            sprintf(find->str_equiv, "%d", find->content.i);
         } else if (find->type == DOUBLE) {
-            sprintf(strtoret, "%g", find->content.d);
+            sprintf(find->str_equiv, "%g", find->content.d);
         } else if (find->type == BOOLEAN) {
             if (find->content.i)
-                sprintf(strtoret, "true");
+                sprintf(find->str_equiv, "true");
             else
-                sprintf(strtoret, "false");
+                sprintf(find->str_equiv, "false");
+        } else {
+            sprintf(find->str_equiv, "???");
         }
     }
-    if (find->str_equiv) {
-        free(find->str_equiv);
-    }
-    find->str_equiv = strtoret;
-    return strtoret;
+    return find->str_equiv;
 }
 
 double getvar_double_fv(var *find) {
@@ -227,6 +290,7 @@ double getvar_double_fv(var *find) {
     else if (find->type == STRING) return atof(find->content.s);
     else if (find->type == INT || find->type == BOOLEAN) return (double)find->content.i;
     else if (find->type == DOUBLE) return find->content.d;
+    else if (find->type == LIST) return (double)find->content.l->size;
     else return 0.0f;
 }
 
@@ -236,7 +300,18 @@ int getvar_boolean_fv(var *find) {
     else if (find->type == BOOLEAN && find->content.i == 0) return 0;
     else if (find->type == INT && find->content.i == 0) return 0;
     else if (find->type == DOUBLE && find->content.d == 0) return 0;
+    else if (find->type == LIST && find->content.l->size == 0) return 0;
     else return 1;
+}
+
+list *getvar_list_fv(var *find) {
+    if (find->type == LIST) return find->content.l;
+    else {
+        printf("Request for element in non-list.\n");
+        list *x = alloc_list_size(1);
+        list_push(x, find);
+        return x;
+    }
 }
 
 var *addvar(char *name) {
@@ -274,7 +349,8 @@ var *find_var(char *name) {
 }
 
 var *ast_eval_expr(ast_node *node) {
-    var *lh, *rh, *to_ret, *new;
+    var *lh, *rh, *new;
+    var *to_ret = NULL;
     if (node == NULL) return NULL;
     if (debug) printf("NODE: %c\t\t: ", node->op);
     switch(node->op) {
@@ -405,6 +481,27 @@ var *ast_eval_expr(ast_node *node) {
                 to_ret = newvar_int(0);
             }
             break;
+        case ELEMENT:
+            to_ret = element_at(getvar_list_fv(lh), getvar_int_fv(rh));
+            break;
+        case LISTELEM:
+            if (debug) printf("A list element.\n");
+            /* listelem's LHS = element to append,
+               RHS = list to append to */
+            list_push(rh->content.l, lh);
+            to_ret = rh;
+            break;
+        case LISTEND:
+            if (debug) printf("The end of the list.\n");
+            /* the LHS is the last item in a list, so
+               create an empty list and put the item in it */
+            to_ret = newvar_empty_list();
+            if (to_ret->content.l == NULL) {
+                printf("Out of memory; cannot allocate space for a new list!\n");
+                break;
+            }
+            list_push(to_ret->content.l, lh);
+            break;
         /* COMPARISONS */
         /* ... are handled by a different function because they're tedious and long */
         case NUM_GT:
@@ -426,7 +523,9 @@ var *ast_eval_expr(ast_node *node) {
     }
     if (!lh->bound) free_var(lh);
     if (rh != NULL) {
-        if (!rh->bound) free_var(rh);
+        if (to_ret != rh) {
+            if (!rh->bound) free_var(rh);
+        }
     }
     return to_ret;
 }
@@ -517,6 +616,8 @@ void free_var(var *to_free) {
     if (to_free != NULL) {
         if (to_free->type == STRING) {
             free(to_free->content.s);
+        } else if (to_free->type == LIST) {
+            free_list(to_free->content.l);
         }
         if (to_free->str_equiv != NULL) {
             free(to_free->str_equiv);
@@ -601,11 +702,44 @@ var *newvar_nothing() {
     return t;
 }
 
+var *newvar_empty_list() {
+    var *t = alloc_var();
+    if (t != NULL) {
+        t->type = LIST;
+        t->content.l = alloc_list();
+        if (t->content.l == NULL)
+            printf("Out of memory -- cannot create new list!\n");
+        t->bound = 0;
+        t->str_equiv = NULL;
+    }
+    return t;
+}
+
+var *newvar_list(list *val) {
+    printf("NEW LIST.\n");
+    var *t = alloc_var();
+    if (t != NULL) {
+        t->type = LIST;
+        printf("Alloc.\n");
+        t->content.l = alloc_list_size(val->max_size);
+        if (t->content.l == NULL)
+            printf("Out of memory -- cannot create new list!\n");
+        printf("Copy.\n");
+        list_copy(t->content.l, val);
+        printf("Copy over.\n");
+        t->bound = 0;
+        t->str_equiv = NULL;
+    }
+    printf("NEW LIST COMPLETE.\n");
+    return t;
+}
+
 var *alloc_var() {
     var *t = (var*)malloc(sizeof(var));
     if (t == NULL) {
         printf("Out of memory!\n");
     }
+    t->type = UNDEFINED;
     return t;
 }
 
@@ -891,6 +1025,9 @@ var *var_assign_fv(var *find, var *value) {
                 break;
             case BOOLEAN:
                 setvar_boolean_fv(find, getvar_boolean_fv(value));
+                break;
+            case LIST:
+                setvar_list_fv(find, getvar_list_fv(value));
                 break;
             case NOTHING:
                 make_var_nothing(find);
