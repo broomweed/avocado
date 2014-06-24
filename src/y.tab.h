@@ -84,12 +84,12 @@ extern int yydebug;
      STRLIT = 293,
      FLOAT = 294,
      FUNC_CALL = 295,
-     GT = 296,
-     LT = 297,
-     PAREN_FUNC_CALL = 298,
-     SINGLE_EXPR = 299,
-     NAMEPREC = 300,
-     COMMAS = 301
+     COMMAS = 296,
+     GT = 297,
+     LT = 298,
+     PAREN_FUNC_CALL = 299,
+     SINGLE_EXPR = 300,
+     NAMEPREC = 301
    };
 #endif
 /* Tokens.  */
@@ -131,12 +131,12 @@ extern int yydebug;
 #define STRLIT 293
 #define FLOAT 294
 #define FUNC_CALL 295
-#define GT 296
-#define LT 297
-#define PAREN_FUNC_CALL 298
-#define SINGLE_EXPR 299
-#define NAMEPREC 300
-#define COMMAS 301
+#define COMMAS 296
+#define GT 297
+#define LT 298
+#define PAREN_FUNC_CALL 299
+#define SINGLE_EXPR 300
+#define NAMEPREC 301
 
 
 

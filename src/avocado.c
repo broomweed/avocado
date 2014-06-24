@@ -6,6 +6,8 @@
 
 extern scope *outermost;
 extern scope *current_scope;
+extern int yylineno;
+int line_num;
 
 /* ------function prototypes------ */
 
@@ -86,6 +88,10 @@ var *vars_cmp(var *v1, var *v2, enum asttypes type);
 char *str_dup(char *str);
 
 /* ------function definitions------ */
+
+void error (char *msg) {
+    fprintf(stderr, "%s near line %d\n", msg, line_num);
+}
 
 void setvar_str(char *name, char *val) {
     var *to_set = find_var(name);
@@ -210,10 +216,10 @@ char *getvar_str_fv(var *find) {
         free(find->str_equiv);
         find->str_equiv = NULL;
     }
-    /*} else if (find->type == UNDEFINED) {
-        strtoret = malloc(10*sizeof(char));
-        sprintf(strtoret, "undefined");*/
-    if (find->type == STRING) {
+    if (find->type == UNDEFINED) {
+        find->str_equiv = malloc(10*sizeof(char));
+        sprintf(find->str_equiv, "undefined");
+    } else if (find->type == STRING) {
         return find->content.s;
     } else if (find->type == LIST) {
         int len = 0;
@@ -224,8 +230,9 @@ char *getvar_str_fv(var *find) {
             /* there's no +1 here because it adds +1 for the last space;
                but we don't put a last space, so we can use that spot
                for the terminating \0 */
-            find->str_equiv = malloc(len * sizeof(char));
-            len = 0;
+            find->str_equiv = malloc((2+len) * sizeof(char));
+            sprintf(find->str_equiv, "L:");
+            len = 2;
             for (int i = 0; i < find->content.l->size; i++) {
                 if (i == find->content.l->size-1) {
                     sprintf(find->str_equiv + len, "%s", getvar_str_fv(element_at(find->content.l, i)));
@@ -335,6 +342,7 @@ var *ast_eval_expr(ast_node *node) {
     var *lh, *rh, *new;
     var *to_ret = NULL;
     if (node == NULL) return NULL;
+    line_num = node->line_num;
     if (debug) printf("NODE: %c\t\t: ", node->op);
     switch(node->op) {
         /* These operations do not act directly on variables. */
@@ -369,6 +377,7 @@ var *ast_eval_expr(ast_node *node) {
             pop_scope();
             return lh;
         case FUNCDEF:
+            if (debug) printf("def.\n");
             /* LHS of FUNCDEF is a LIST of parameter names.
                RHS is an ast_node representing what happens when you call it.
                'def' wraps this node in an ASSIGN node so it gets a name.
@@ -386,12 +395,15 @@ var *ast_eval_expr(ast_node *node) {
         case COMPOUND:
             if (debug) printf("compound assignment of:\n");
             /* compound assignment */
-            /* assign the lhs to the lhs of the other statement (which should be NULL) */
-            node->content.children.rhs->content.children.lhs = node_name(node->content.children.lhs->content.termstr);
+            /* the LHS of compound assignment is the name of the variable;
+               the RHS is an operation with a null RHS. */
+            /* assign the name to the lhs of the other statement (which should be NULL) */
+            node->content.children.rhs->content.children.lhs =
+                node_name(node->content.children.lhs->content.termstr);
             /* evaluate it and assign the result to the LHS of this statement */
             lh = ast_eval_expr(node->content.children.lhs);
             rh = ast_eval_expr(node->content.children.rhs);
-            var_assign(getvar_str_fv(lh), rh);
+            var_assign_fv(find_var(lh->content.s), rh);
             /* set the LHS of the other statement back to null so we don't free the pointer twice */
             free(node->content.children.rhs->content.children.lhs);
             free_var(lh);
@@ -477,6 +489,10 @@ var *ast_eval_expr(ast_node *node) {
                 to_ret = newvar_int(0);
             }
             break;
+        case FUNCCALL:
+            /* LH of FUNCCALL is the function to call; RH is the arguments. */
+            call_func(lh->content.f, rh->content.l);
+            break;
         case ELEMENT:
             to_ret = element_at(getvar_list_fv(lh), getvar_int_fv(rh));
             break;
@@ -538,6 +554,7 @@ ast_node *node(enum asttypes type, ast_node *lhs, ast_node *rhs) {
     to_return->op = type;
     to_return->content.children.lhs = lhs;
     to_return->content.children.rhs = rhs;
+    to_return->line_num = yylineno;
     return to_return;
 }
 
@@ -1024,39 +1041,9 @@ var *vars_cmp(var *v1, var *v2, enum asttypes type) {
     }
 }
 
-var *var_assign(char *name, var *value) {
-    if (debug) printf("VAR:    %8s: ", name);
-    var *find = find_var(name);
-    if (find == NULL) {
-        printf("--!-- %s: no such variable\n", name);
-        return NULL;
-    }
-    if (debug) printf("%p.\n", (void*)find);
-    if (value != NULL) {
-        switch (value->type) {
-            case STRING:
-                setvar_str_fv(find, getvar_str_fv(value));
-                break;
-            case INT:
-                setvar_int_fv(find, getvar_int_fv(value));
-                break;
-            case DOUBLE:
-                setvar_double_fv(find, getvar_double_fv(value));
-                break;
-            case BOOLEAN:
-                setvar_boolean_fv(find, getvar_boolean_fv(value));
-                break;
-            case NOTHING:
-                make_var_nothing(find);
-                break;
-            default:
-                setvar_int_fv(find, getvar_int_fv(value));
-        }
-    } else {
-        if (debug)printf("...something went wrong\n");
-        setvar_int_fv(find, 0);
-    }
-    return find;
+void bind(char *name, var *value) {
+    var *new_var = addvar(name);
+    var_copy(new_var, value);
 }
 
 var *var_assign_fv(var *find, var *value) {

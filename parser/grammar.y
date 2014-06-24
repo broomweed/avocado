@@ -93,6 +93,8 @@ ast_node *root;
 %type <n> comma_exprs
 
 %left FUNC_CALL
+%left ','
+%left COMMAS
 %left '('
 %left AND OR NOT XOR
 %left '<' '>' EQ LTEQ GTEQ LT GT NE SEQ SLTEQ SGTEQ SLT SGT SNE
@@ -104,10 +106,8 @@ ast_node *root;
 %left '!'
 %left '['
 %left UNARY_MINUS
-%left ','
 %left SINGLE_EXPR
 %left NAMEPREC
-%left COMMAS
 %nonassoc NAME T_NOTHING TRUE FALSE INTEGER STRLIT FLOAT '`'
 
 %expect 2
@@ -283,7 +283,7 @@ function_call:
     expr '(' comma_exprs ')' %prec FUNC_CALL {
         $$ = node(FUNCCALL, $1, $3);
     } | varname comma_exprs %prec FUNC_CALL {
-        $$ = node(FUNCCALL, $1, $2);
+        $$ = node(FUNCCALL, node(VARNAME, $1, NULL), $2);
     }
 
 list:
@@ -296,7 +296,7 @@ list:
 comma_exprs:
     expr %prec COMMAS {
         $$ = node(LISTEND, $1, NULL);
-    } | comma_exprs ',' comma_exprs {
+    } | comma_exprs ',' expr {
         $$ = node(LISTELEM, $3, $1);
     }
 

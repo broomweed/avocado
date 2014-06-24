@@ -40,7 +40,8 @@ list *list_push(list *target, var *value) {
 }
 
 var *list_pop(list *target) {
-    var *to_ret = element_at(target, target->size-1);
+    var *to_ret = malloc(sizeof(var));
+    var_copy(to_ret, element_at(target, target->size-1));
     if (target->size <= target->max_size/2) {
         target->max_size /= 2;
         target->contents = realloc(target->contents, target->max_size * sizeof(var));
@@ -52,8 +53,29 @@ var *list_pop(list *target) {
     return to_ret;
 }
 
+var *list_shift(list *target) {
+    if (debug) printf("Shift list.\n");
+    if (target->size > 0) {
+        var *to_ret = malloc(sizeof(var));
+        var_copy(to_ret, element_at(target, 0));
+        target->min_index++;
+        target->size--;
+        if (debug) {
+            printf("List now: ");
+            for (int i = target->min_index; i < target->size + target->min_index; i++) {
+                printf("%s ", getvar_str_fv(element_at(target, i)));
+            }
+            printf("\n");
+        }
+        return to_ret;
+    } else {
+        if (debug) printf("But it is empty!");
+        return NULL;
+    }
+}
+
 void list_copy(list *dest, list *src) {
-    if (debug) printf("Copying list...\n");
+    if (debug) printf("\nCopying list...\n");
     for (int i = 0; i < src->size; i++) {
         if (debug) printf("Copying element %d.\n", i);
         list_push(dest, element_at(src, i));

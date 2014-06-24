@@ -41,6 +41,10 @@ typedef struct scope {
     struct scope *outer;
     /* This represents the bindings for the scope. */
     binding *vars;
+    /* This is the value of the last expression
+       executed within the scope; it is also set
+       on function return. */
+    var *last_val;
 } scope;
 
 extern scope *outermost;
@@ -94,6 +98,7 @@ enum asttypes {
 
 typedef struct ast_node {
     enum asttypes op;
+    int line_num;
     union {
         int termint;
         char *termstr;
@@ -119,6 +124,8 @@ typedef struct function {
 extern ast_node *root;
 
 extern int debug; // Debug flag
+
+extern void error(char *msg);
 
 extern void setvar_str_fv(var *var, char *val);
 extern void setvar_double_fv(var *var, double val);
@@ -163,7 +170,8 @@ extern var *newvar_boolean(int val);
 extern var *newvar_list(list *val);
 extern var *newvar_empty_list();
 extern var *newvar_nothing();
-extern var *var_assign(char *name, var *value);
+
+extern void bind(char *name, var *value);
 var *var_assign_fv(var *new, var *value);
 
 extern var *vars_sum(var *v1, var *v2);
@@ -186,15 +194,18 @@ extern void pop_scope();
 
 extern list *list_push (list* target, var* value);
 extern var *list_pop(list* target);
+extern var *list_shift(list *target);
 extern void list_copy(list* dest, list* src);
 extern var *element_at(list* target, int index);
 extern int set_element(list *target, int index, var *value);
 extern list *alloc_list();
 extern list *alloc_list_size(int size);
 extern void free_list(list *l);
+extern void var_copy (var *dest, var *src);
 
 /* --- from functions.c --- */
 
 extern void free_func(function *f);
 extern function *func_copy(function *src);
 extern function *create_func(list *parameters, ast_node *exec);
+extern var *call_func(function *func, list *args);
