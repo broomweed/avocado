@@ -2,9 +2,11 @@
 #include <stdio.h>
 #include <string.h>
 #include "avocado.h"
+#define YYERROR_VERBOSE
 
 FILE *yyin;
 extern int yychar;
+extern int yylineno;
 int debug;
 
 int yylex(void);
@@ -14,7 +16,7 @@ scope *outermost;
 scope *current_scope;
 
 void yyerror(const char *str) {
-    fprintf(stderr, "error: %s -- unexpected '%c'\n", str, yychar);
+    fprintf(stderr, "error: %s near line %d\n", str, yylineno);
 }
 
 int yywrap() {
@@ -57,7 +59,8 @@ ast_node *root;
 
 %}
 
-%token TOKVAR TOKPRINT TOKIF TOKELSE TOKNOTHING TOKTRUE TOKFALSE TOKWHILE TOKDEF
+%token VAR T_PRINT T_IF THEN ELSE T_WHILE DO DEF
+%token T_NOTHING TRUE FALSE
 %token EQ LTEQ GTEQ NE SEQ SLTEQ SGTEQ SLT SGT SNE AND OR NOT XOR
 %token INCR DECR PLUSEQUALS MINUSEQUALS TIMESEQUALS DIVEQUALS CONCATEQUALS
 %token UNARY_MINUS
@@ -82,22 +85,41 @@ ast_node *root;
 %type <n> newvar
 %type <n> expr
 %type <n> varname
-%type <n> newvarname
-%type <n> reassigner
+%type <n> compound
 %type <n> list
+%type <n> function_def
+%type <n> function_call
+%type <n> comma_names
 %type <n> comma_exprs
 
+%left FUNC_CALL
+%left '('
 %left AND OR NOT XOR
 %left '<' '>' EQ LTEQ GTEQ LT GT NE SEQ SLTEQ SGTEQ SLT SGT SNE
 %left ':'
 %left '+' '-'
 %left '*' '/'
 %right '^'
+%left PAREN_FUNC_CALL
 %left '!'
 %left '['
 %left UNARY_MINUS
-/* expect 1 for the dangling else ambiguity */
-%expect 1
+%left ','
+%left SINGLE_EXPR
+%left NAMEPREC
+%left COMMAS
+%nonassoc NAME T_NOTHING TRUE FALSE INTEGER STRLIT FLOAT '`'
+
+%expect 2
+/* 2 shift/reduce conflicts expected:
+   the dangling else ambiguity; i.e. which if does the else apply to here?
+        if x then
+        if y then
+        z();
+        else
+        w();
+     (it assumes the else applies to 'if y,' to spare your wondering)
+ */
 %%
 program: statementlist {
         root = $1;
@@ -110,11 +132,11 @@ program: statementlist {
         cleanup();
     }
 
-statementlist: statement {
-        if (debug) printf(": %c\n", $1->op);
-        $$ = $1;
+statementlist: {
+        if (debug) printf("...\n");
+        $$ = NULL;
     } | statementlist statement {
-        if (debug) printf(". %c\n", $2->op);
+        if (debug) printf(": %c\n", $2->op);
         $$ = node(MULTI, $1, $2);
     }
 
@@ -124,13 +146,21 @@ block:
     }
 
 qualifiedblock:
-    TOKIF expr statement {
+    T_IF expr THEN statement {
+        $$ = node(IF, $2, node(IFELSE, $4, NULL));
+    } | T_IF expr block {
         $$ = node(IF, $2, node(IFELSE, $3, NULL));
-    } | TOKIF expr statement TOKELSE statement {
+    } | T_IF expr THEN statement ELSE statement {
+        $$ = node(IF, $2, node(IFELSE, $4, $6));
+    } | T_IF expr block ELSE statement {
         $$ = node(IF, $2, node(IFELSE, $3, $5));
-    } | TOKWHILE expr statement {
+    } | T_WHILE expr DO statement {
+        $$ = node(WHILE, $2, $4);
+    } | T_WHILE expr block {
         $$ = node(WHILE, $2, $3);
     } | block {
+        $$ = $1;
+    } | function_def {
         $$ = $1;
     }
 
@@ -144,41 +174,36 @@ statement:
 singlestatement:
     assignment {
         $$ = $1;
-    } | reassigner {
+    } | compound {
         $$ = $1;
     } | newvar {
         $$ = $1;
     } | declare {
         $$ = $1;
-    } | TOKPRINT expr {
+    } | expr {
+        $$ = node(EXPR, $1, NULL);
+    } | T_PRINT expr {
         $$ = node(PRINT, $2, NULL);
     }
 
 assignment:
-    newvarname '=' expr {
+    varname '=' expr {
         $$ = node(ASSIGN, $1, $3);
     }
 
 newvar:
-    TOKVAR newvarname {
+    VAR varname {
         $$ = node(CREATE, $2, NULL);
     }
 
 declare:
-    TOKVAR newvarname '=' expr {
+    VAR varname '=' expr {
         $$ = node(CREATE, $2, $4);
-    }
-
-newvarname:
-    NAME {
-        $$ = node_str($1);
-    } | '`' expr '`' {
-        $$ = node(VARNAME, $2, NULL);
     }
 
 varname:
     NAME {
-        $$ = node_name($1);
+        $$ = node_str($1);
     } | '`' expr '`' {
         $$ = node(VARNAME, $2, NULL);
     }
@@ -229,7 +254,6 @@ expr:
     } | '-' expr %prec UNARY_MINUS {
         $$ = node(SUB, node_int(0), $2);
     } | '+' expr %prec UNARY_MINUS {
-        /* this could be useful to convert to number */
         $$ = node(ADD, node_int(0), $2);
     } | '(' expr ')' {
         $$ = $2;
@@ -239,46 +263,71 @@ expr:
         $$ = node_str($1);
     } | list {
         $$ = $1;
-    } | varname {
-        $$ = $1;
+    } | varname %prec NAMEPREC {
+        $$ = node(VARNAME, $1, NULL);
     } | INTEGER {
         $$ = node_int($1);
     } | FLOAT {
         $$ = node_dbl($1);
-    } | TOKNOTHING {
+    } | T_NOTHING {
         $$ = node_nothing();
-    } | TOKTRUE {
+    } | TRUE {
         $$ = node_boolean(1);
-    } | TOKFALSE {
+    } | FALSE {
         $$ = node_boolean(0);
+    } | function_call {
+        $$ = $1;
+    }
+
+function_call:
+    expr '(' comma_exprs ')' %prec FUNC_CALL {
+        $$ = node(FUNCCALL, $1, $3);
+    } | varname comma_exprs %prec FUNC_CALL {
+        $$ = node(FUNCCALL, $1, $2);
     }
 
 list:
     '[' comma_exprs ']' {
-        $$ = $2;
+        $$ = node(LISTEND, $2, NULL);
+    } | '[' ']' {
+        $$ = node(LISTEND, NULL, NULL);
     }
 
 comma_exprs:
-    expr {
+    expr %prec COMMAS {
         $$ = node(LISTEND, $1, NULL);
-    } | comma_exprs ',' expr {
+    } | comma_exprs ',' comma_exprs {
         $$ = node(LISTELEM, $3, $1);
     }
 
-reassigner:
-    newvarname INCR {
+function_def:
+    DEF varname '(' comma_names ')' statement {
+        $$ = node(CREATE, $2, node(FUNCDEF, $4, $6));
+    } | DEF varname comma_names statement {
+        $$ = node(CREATE, $2, node(FUNCDEF, $3, $4));
+    }
+
+comma_names:
+    varname {
+        $$ = node(LISTEND, $1, NULL);
+    } | comma_names ',' varname {
+        $$ = node(LISTELEM, $3, $1);
+    }
+
+compound:
+    varname INCR {
         $$ = node(COMPOUND, $1, node(ADD, NULL, node_int(1)));
-    } | newvarname DECR {
+    } | varname DECR {
         $$ = node(COMPOUND, $1, node(SUB, NULL, node_int(1)));
-    } | newvarname PLUSEQUALS expr {
+    } | varname PLUSEQUALS expr {
         $$ = node(COMPOUND, $1, node(ADD, NULL, $3));
-    } | newvarname MINUSEQUALS expr {
+    } | varname MINUSEQUALS expr {
         $$ = node(COMPOUND, $1, node(SUB, NULL, $3));
-    } | newvarname TIMESEQUALS expr {
+    } | varname TIMESEQUALS expr {
         $$ = node(COMPOUND, $1, node(MUL, NULL, $3));
-    } | newvarname DIVEQUALS expr {
+    } | varname DIVEQUALS expr {
         $$ = node(COMPOUND, $1, node(DIV, NULL, $3));
-    } | newvarname CONCATEQUALS expr {
+    } | varname CONCATEQUALS expr {
         $$ = node(COMPOUND, $1, node(CONCAT, NULL, $3));
     }
 %%

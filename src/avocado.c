@@ -22,6 +22,7 @@ void setvar_double_fv(var *var, double val);
 void setvar_int_fv(var *var, int val);
 void setvar_boolean_fv(var *var, int val);
 void setvar_list_fv(var *var, list *val);
+void setvar_function_fv(var *var, function *val);
 
 /* var-getting by name */
 int getvar_int(char *name);
@@ -36,6 +37,7 @@ char *getvar_str_fv(var *var);
 double getvar_double_fv(var *var);
 int getvar_boolean_fv(var *var);
 list *getvar_list_fv(var *var);
+function *getvar_function_fv(var *var);
 
 /* var stuff */
 var *addvar(char *name);
@@ -50,11 +52,13 @@ ast_node *node_dbl(double val);
 ast_node *node_name(char *val);
 ast_node *node_boolean(int val);
 ast_node *node_nothing();
+ast_node *ast_copy(ast_node *node);
 
 /* mem stuff */
 void free_node(ast_node *node);
 var *alloc_var();
 void free_var(var *to_free);
+void clear_var_ptrs(var *to_free);
 void unbind(binding *to_free);
 void cleanup();
 
@@ -66,6 +70,7 @@ var *newvar_boolean(int val);
 var *newvar_list(list *val);
 var *newvar_empty_list();
 var *newvar_nothing();
+var *newvar_func(list *param_names, ast_node *exec);
 var *var_assign(char *name, var *value);
 var *var_assign_fv(var *new, var *value);
 
@@ -84,39 +89,17 @@ char *str_dup(char *str);
 
 void setvar_str(char *name, char *val) {
     var *to_set = find_var(name);
-    if (to_set == NULL) {
-        to_set = addvar(name);
-    }
-    if (to_set->type == STRING) {
-        free(to_set->content.s);
-    }
-    to_set->content.s = (char*)malloc(strlen(val)*sizeof(char));
-    strcpy(to_set->content.s, val);
-    to_set->type = STRING;
+    setvar_str_fv(to_set, val);
 }
 
 void setvar_double(char *name, double val) {
     var *to_set = find_var(name);
-    if (to_set == NULL) {
-        to_set = addvar(name);
-    }
-    if (to_set->type == STRING) {
-        free(to_set->content.s);
-    }
-    to_set->content.d = val;
-    to_set->type = DOUBLE;
+    setvar_double_fv(to_set, val);
 }
 
 void setvar_int(char *name, int val) {
     var *to_set = find_var(name);
-    if (to_set == NULL) {
-        to_set = addvar(name);
-    }
-    if (to_set->type == STRING) {
-        free(to_set->content.s);
-    }
-    to_set->content.i = val;
-    to_set->type = INT;
+    setvar_int_fv(to_set, val);
 }
 
 void setvar_boolean(char *name, int val) {
@@ -129,62 +112,48 @@ void setvar_list(char *name, list *val) {
     setvar_list_fv(to_set, val);
 }
 
+void setvar_function(char *name, function *val) {
+    var *to_set = find_var(name);
+    setvar_function_fv(to_set, val);
+}
+
 void setvar_str_fv(var *to_set, char *val) {
-    if (to_set->type == STRING) {
-        free(to_set->content.s);
-    }
-    if (to_set->type == LIST) {
-        free_list(to_set->content.l);
-    }
+    clear_var_ptrs(to_set);
     to_set->content.s = (char*)malloc((strlen(val)+1)*sizeof(char));
     strcpy(to_set->content.s, val);
     to_set->type = STRING;
 }
 
 void setvar_double_fv(var *to_set, double val) {
-    if (to_set->type == STRING) {
-        free(to_set->content.s);
-    }
-    if (to_set->type == LIST) {
-        free_list(to_set->content.l);
-    }
+    clear_var_ptrs(to_set);
     to_set->content.d = val;
     to_set->type = DOUBLE;
 }
 
 void setvar_int_fv(var *to_set, int val) {
-    if (to_set->type == STRING) {
-        free(to_set->content.s);
-    }
-    if (to_set->type == LIST) {
-        free_list(to_set->content.l);
-    }
+    clear_var_ptrs(to_set);
     to_set->content.i = val;
     to_set->type = INT;
 }
 
 void setvar_boolean_fv(var *to_set, int val) {
-    if (to_set->type == STRING) {
-        free(to_set->content.s);
-    }
-    if (to_set->type == LIST) {
-        free_list(to_set->content.l);
-    }
+    clear_var_ptrs(to_set);
     if (val) to_set->content.i = 1;
     else to_set->content.i = 0;
     to_set->type = BOOLEAN;
 }
 
 void setvar_list_fv(var *to_set, list *val) {
-    if (to_set->type == STRING) {
-        free(to_set->content.s);
-    }
-    if (to_set->type == LIST) {
-        free_list(to_set->content.l);
-    }
+    clear_var_ptrs(to_set);
     to_set->content.l = alloc_list_size(val->size);
     list_copy(to_set->content.l, val);
     to_set->type = LIST;
+}
+
+void setvar_function_fv(var *to_set, function *val) {
+    clear_var_ptrs(to_set);
+    to_set->content.f = func_copy(val);
+    to_set->type = FUNCTION;
 }
 
 void make_var_nothing(var *find) {
@@ -202,15 +171,7 @@ int getvar_int(char *name) {
 
 char *getvar_str(char *name) {
     var *find = find_var(name);
-    if (find == NULL) {
-        addvar(name);
-        setvar_str(name, "");
-        return find_var(name)->content.s;
-    }
-    if (find->type == STRING) return find->content.s;
-    if (find->type == INT) sprintf(find->str_equiv, "%d", find->content.i);
-    if (find->type == DOUBLE) sprintf(find->str_equiv, "%g", find->content.d);
-    return find->str_equiv;
+    return getvar_str_fv(find);
 }
 
 double getvar_double(char *name) {
@@ -226,6 +187,11 @@ int getvar_boolean(char *name) {
 list *getvar_list(char *name) {
     var *find = find_var(name);
     return getvar_list_fv(find);
+}
+
+function *getvar_function(char *name) {
+    var *find = find_var(name);
+    return getvar_function_fv(find);
 }
 
 int getvar_int_fv(var *find) {
@@ -254,18 +220,24 @@ char *getvar_str_fv(var *find) {
         for (int i = 0; i < find->content.l->size; i++) {
             len += strlen(getvar_str_fv(element_at(find->content.l, i))) + 1;
         }
-        /* there's no +1 here because it adds +1 for the last space;
-           but we don't put a last space, so we can use that spot
-           for the terminating \0 */
-        find->str_equiv = malloc(len * sizeof(char));
-        len = 0;
-        for (int i = 0; i < find->content.l->size; i++) {
-            if (i == find->content.l->size-1) {
-                sprintf(find->str_equiv + len, "%s", getvar_str_fv(element_at(find->content.l, i)));
-            } else {
-                sprintf(find->str_equiv + len, "%s ", getvar_str_fv(element_at(find->content.l, i)));
+        if (len > 0) {
+            /* there's no +1 here because it adds +1 for the last space;
+               but we don't put a last space, so we can use that spot
+               for the terminating \0 */
+            find->str_equiv = malloc(len * sizeof(char));
+            len = 0;
+            for (int i = 0; i < find->content.l->size; i++) {
+                if (i == find->content.l->size-1) {
+                    sprintf(find->str_equiv + len, "%s", getvar_str_fv(element_at(find->content.l, i)));
+                } else {
+                    sprintf(find->str_equiv + len, "%s ", getvar_str_fv(element_at(find->content.l, i)));
+                }
+                len += strlen(getvar_str_fv(element_at(find->content.l, i))) + 1;
             }
-            len += strlen(getvar_str_fv(element_at(find->content.l, i))) + 1;
+        } else {
+            /* return an empty string for an empty list */
+            find->str_equiv = malloc(sizeof(char));
+            find->str_equiv[0] = '\0';
         }
     } else {
         find->str_equiv = malloc(16*sizeof(char));
@@ -310,6 +282,17 @@ list *getvar_list_fv(var *find) {
         printf("Request for element in non-list.\n");
         list *x = alloc_list_size(1);
         list_push(x, find);
+        return x;
+    }
+}
+
+function *getvar_function_fv(var *find) {
+    if (find->type == FUNCTION) return find->content.f;
+    else {
+        printf("Cannot call a non-function!\n");
+        function *x = malloc(sizeof(function));
+        x->parameters = NULL;
+        x->exec = NULL;
         return x;
     }
 }
@@ -385,6 +368,17 @@ var *ast_eval_expr(ast_node *node) {
             if (debug) printf("SCOPE END\t: }}}\n");
             pop_scope();
             return lh;
+        case FUNCDEF:
+            /* LHS of FUNCDEF is a LIST of parameter names.
+               RHS is an ast_node representing what happens when you call it.
+               'def' wraps this node in an ASSIGN node so it gets a name.
+               This same node type can be used in the future for anonymous functions. */
+            /* Now, evaluate the name list... */
+            lh = ast_eval_expr(node->content.children.lhs);
+            /* And create a new function that has it and the RHS (which will be copied.) */
+            rh = newvar_func(lh->content.l, node->content.children.rhs);
+            free(lh);
+            return rh;
         case MULTI:
             if (debug) printf("MULTI...\n");
             ast_eval_expr(node->content.children.lhs);
@@ -430,8 +424,10 @@ var *ast_eval_expr(ast_node *node) {
         default:
             if (debug) printf("...\n");
             if (node->content.children.lhs == NULL) {
-                printf("!!!\n");
-                return NULL;
+                if (node->op != LISTEND) {
+                    printf("!!!\n");
+                    return NULL;
+                }
             }
             lh = ast_eval_expr(node->content.children.lhs);
             rh = ast_eval_expr(node->content.children.rhs);
@@ -500,7 +496,12 @@ var *ast_eval_expr(ast_node *node) {
                 printf("Out of memory; cannot allocate space for a new list!\n");
                 break;
             }
-            list_push(to_ret->content.l, lh);
+            if (lh != NULL) {
+                list_push(to_ret->content.l, lh);
+            }
+            break;
+        case EXPR:
+            /* do nothing; this is just here so we can throw away the return value safely */
             break;
         /* COMPARISONS */
         /* ... are handled by a different function because they're tedious and long */
@@ -519,9 +520,11 @@ var *ast_eval_expr(ast_node *node) {
             to_ret = vars_cmp(lh, rh, node->op);
             break;
         default:
-            printf("AST operation `%c` unimplemented", node->op);
+            printf("-!!!- AST operation %c (%d) unimplemented\n", node->op, node->op);
     }
+    if (lh)
     if (!lh->bound) free_var(lh);
+    if (rh)
     if (rh != NULL) {
         if (to_ret != rh) {
             if (!rh->bound) free_var(rh);
@@ -614,15 +617,23 @@ void free_node(ast_node *node) {
 
 void free_var(var *to_free) {
     if (to_free != NULL) {
-        if (to_free->type == STRING) {
-            free(to_free->content.s);
-        } else if (to_free->type == LIST) {
-            free_list(to_free->content.l);
-        }
+        clear_var_ptrs(to_free);
         if (to_free->str_equiv != NULL) {
             free(to_free->str_equiv);
         }
         free(to_free);
+    }
+}
+
+void clear_var_ptrs(var *to_free) {
+    if (to_free->type == STRING) {
+        free(to_free->content.s);
+    }
+    if (to_free->type == LIST) {
+        free_list(to_free->content.l);
+    }
+    if (to_free->type == FUNCTION) {
+        free_func(to_free->content.f);
     }
 }
 
@@ -702,6 +713,48 @@ var *newvar_nothing() {
     return t;
 }
 
+ast_node *ast_copy(ast_node *node) {
+    if (node == NULL) return NULL;
+    if (debug) printf("Copy AST node: %c (%d)\n", node->op, node->op);
+    ast_node *new_node = malloc(sizeof(ast_node));
+    *new_node = *node;
+    if (node->op == TERMSTR) {
+        char *new_str = malloc((strlen(node->content.termstr)+1)*sizeof(char));
+        strcpy(new_str, node->content.termstr);
+        new_node->content.termstr = new_str;
+    } else if (node->op != TERMBOOLEAN
+            && node->op != TERMDBL
+            && node->op != TERMNAME
+            && node->op != TERMINT
+            && node->op != EMPTY) {
+        new_node->content.children.lhs = ast_copy(node->content.children.lhs);
+        new_node->content.children.rhs = ast_copy(node->content.children.rhs);
+    }
+    if (debug) printf("Done with %c (%d).\n", node->op, node->op);
+    return new_node;
+}
+
+var *newvar_func(list *param_names, ast_node *exec) {
+    list *l = alloc_list_size(param_names->size);
+    list_copy(l, param_names);
+    /* now copy the AST nodes */
+    ast_node *new_node = ast_copy(exec);
+    var *v = alloc_var();
+    if (v != NULL) {
+        v->type = FUNCTION;
+        v->content.f = malloc(sizeof(function));
+        if (v->content.f == NULL) {
+            printf("Out of memory; cannot create new function!\n");
+            return NULL;
+        }
+        v->content.f->parameters = l;
+        v->content.f->exec = new_node;
+        v->bound = 0;
+        v->str_equiv = NULL;
+    }
+    return v;
+}
+
 var *newvar_empty_list() {
     var *t = alloc_var();
     if (t != NULL) {
@@ -716,21 +769,16 @@ var *newvar_empty_list() {
 }
 
 var *newvar_list(list *val) {
-    printf("NEW LIST.\n");
     var *t = alloc_var();
     if (t != NULL) {
         t->type = LIST;
-        printf("Alloc.\n");
         t->content.l = alloc_list_size(val->max_size);
         if (t->content.l == NULL)
             printf("Out of memory -- cannot create new list!\n");
-        printf("Copy.\n");
         list_copy(t->content.l, val);
-        printf("Copy over.\n");
         t->bound = 0;
         t->str_equiv = NULL;
     }
-    printf("NEW LIST COMPLETE.\n");
     return t;
 }
 
@@ -1028,6 +1076,9 @@ var *var_assign_fv(var *find, var *value) {
                 break;
             case LIST:
                 setvar_list_fv(find, getvar_list_fv(value));
+                break;
+            case FUNCTION:
+                setvar_function_fv(find, getvar_function_fv(value));
                 break;
             case NOTHING:
                 make_var_nothing(find);

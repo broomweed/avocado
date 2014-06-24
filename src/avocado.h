@@ -1,17 +1,18 @@
 #include <stdio.h>
 #include "uthash.h"
-#pragma once
 
 struct var;
+struct function;
 
 /* A dynamic array. */
 typedef struct list {
     int max_size;
+    int min_index;
     int size;
     struct var* contents;
 } list;
 
-enum vartypes {INT, DOUBLE, STRING, BOOLEAN, LIST, UNDEFINED, NOTHING};
+enum vartypes {INT, DOUBLE, STRING, BOOLEAN, LIST, FUNCTION, UNDEFINED, NOTHING};
 
 typedef struct var {
     int bound;
@@ -21,6 +22,7 @@ typedef struct var {
         double d;
         char* s;
         list* l;
+        struct function *f;
     } content;
     char *str_equiv;
 } var;
@@ -51,6 +53,9 @@ enum asttypes {
     DIV = '/',
     CONCAT = ':',
     ELEMENT = '[',
+    FUNCDEF = 'f',
+    FUNCCALL = '(',
+    EXPR = '$',
     CREATE = 'v',
     ASSIGN = '_',
     COMPOUND = '\\',
@@ -64,8 +69,8 @@ enum asttypes {
     BXOR = '1', // as in '1 only'
     NUM_GT = '>',
     NUM_LT = '<',
-    NUM_GTEQ = '(',
-    NUM_LTEQ = ')',
+    NUM_GTEQ = ']',
+    NUM_LTEQ = '}',
     NUM_EQ = '=',
     NUM_NE = '#',
     STR_GT = 'g',
@@ -100,6 +105,17 @@ typedef struct ast_node {
     } content;
 } ast_node;
 
+/* This represents a function that has
+   been defined by the script. */
+typedef struct function {
+    /* A list of strings (in vars) that
+       contain the names of parameters. */
+    list *parameters;
+    /* The AST node that will be executed when
+       the function will be called. */
+    struct ast_node *exec;
+} function;
+
 extern ast_node *root;
 
 extern int debug; // Debug flag
@@ -133,6 +149,7 @@ extern ast_node *node_dbl(double val);
 extern ast_node *node_name(char *val);
 extern ast_node *node_nothing();
 extern ast_node *node_boolean(int val);
+ast_node *ast_copy(ast_node *node);
 
 extern void free_node(ast_node *node);
 extern var *alloc_var();
@@ -175,3 +192,9 @@ extern int set_element(list *target, int index, var *value);
 extern list *alloc_list();
 extern list *alloc_list_size(int size);
 extern void free_list(list *l);
+
+/* --- from functions.c --- */
+
+extern void free_func(function *f);
+extern function *func_copy(function *src);
+extern function *create_func(list *parameters, ast_node *exec);

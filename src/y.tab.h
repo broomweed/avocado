@@ -46,83 +46,97 @@ extern int yydebug;
    /* Put the tokens into the symbol table, so that GDB and other debuggers
       know about them.  */
    enum yytokentype {
-     TOKVAR = 258,
-     TOKPRINT = 259,
-     TOKIF = 260,
-     TOKELSE = 261,
-     TOKNOTHING = 262,
-     TOKTRUE = 263,
-     TOKFALSE = 264,
-     TOKWHILE = 265,
-     TOKDEF = 266,
-     EQ = 267,
-     LTEQ = 268,
-     GTEQ = 269,
-     NE = 270,
-     SEQ = 271,
-     SLTEQ = 272,
-     SGTEQ = 273,
-     SLT = 274,
-     SGT = 275,
-     SNE = 276,
-     AND = 277,
-     OR = 278,
-     NOT = 279,
-     XOR = 280,
-     INCR = 281,
-     DECR = 282,
-     PLUSEQUALS = 283,
-     MINUSEQUALS = 284,
-     TIMESEQUALS = 285,
-     DIVEQUALS = 286,
-     CONCATEQUALS = 287,
-     UNARY_MINUS = 288,
-     NAME = 289,
-     INTEGER = 290,
-     STRLIT = 291,
-     FLOAT = 292,
-     GT = 293,
-     LT = 294
+     VAR = 258,
+     T_PRINT = 259,
+     T_IF = 260,
+     THEN = 261,
+     ELSE = 262,
+     T_WHILE = 263,
+     DO = 264,
+     DEF = 265,
+     T_NOTHING = 266,
+     TRUE = 267,
+     FALSE = 268,
+     EQ = 269,
+     LTEQ = 270,
+     GTEQ = 271,
+     NE = 272,
+     SEQ = 273,
+     SLTEQ = 274,
+     SGTEQ = 275,
+     SLT = 276,
+     SGT = 277,
+     SNE = 278,
+     AND = 279,
+     OR = 280,
+     NOT = 281,
+     XOR = 282,
+     INCR = 283,
+     DECR = 284,
+     PLUSEQUALS = 285,
+     MINUSEQUALS = 286,
+     TIMESEQUALS = 287,
+     DIVEQUALS = 288,
+     CONCATEQUALS = 289,
+     UNARY_MINUS = 290,
+     NAME = 291,
+     INTEGER = 292,
+     STRLIT = 293,
+     FLOAT = 294,
+     FUNC_CALL = 295,
+     GT = 296,
+     LT = 297,
+     PAREN_FUNC_CALL = 298,
+     SINGLE_EXPR = 299,
+     NAMEPREC = 300,
+     COMMAS = 301
    };
 #endif
 /* Tokens.  */
-#define TOKVAR 258
-#define TOKPRINT 259
-#define TOKIF 260
-#define TOKELSE 261
-#define TOKNOTHING 262
-#define TOKTRUE 263
-#define TOKFALSE 264
-#define TOKWHILE 265
-#define TOKDEF 266
-#define EQ 267
-#define LTEQ 268
-#define GTEQ 269
-#define NE 270
-#define SEQ 271
-#define SLTEQ 272
-#define SGTEQ 273
-#define SLT 274
-#define SGT 275
-#define SNE 276
-#define AND 277
-#define OR 278
-#define NOT 279
-#define XOR 280
-#define INCR 281
-#define DECR 282
-#define PLUSEQUALS 283
-#define MINUSEQUALS 284
-#define TIMESEQUALS 285
-#define DIVEQUALS 286
-#define CONCATEQUALS 287
-#define UNARY_MINUS 288
-#define NAME 289
-#define INTEGER 290
-#define STRLIT 291
-#define FLOAT 292
-#define GT 293
-#define LT 294
+#define VAR 258
+#define T_PRINT 259
+#define T_IF 260
+#define THEN 261
+#define ELSE 262
+#define T_WHILE 263
+#define DO 264
+#define DEF 265
+#define T_NOTHING 266
+#define TRUE 267
+#define FALSE 268
+#define EQ 269
+#define LTEQ 270
+#define GTEQ 271
+#define NE 272
+#define SEQ 273
+#define SLTEQ 274
+#define SGTEQ 275
+#define SLT 276
+#define SGT 277
+#define SNE 278
+#define AND 279
+#define OR 280
+#define NOT 281
+#define XOR 282
+#define INCR 283
+#define DECR 284
+#define PLUSEQUALS 285
+#define MINUSEQUALS 286
+#define TIMESEQUALS 287
+#define DIVEQUALS 288
+#define CONCATEQUALS 289
+#define UNARY_MINUS 290
+#define NAME 291
+#define INTEGER 292
+#define STRLIT 293
+#define FLOAT 294
+#define FUNC_CALL 295
+#define GT 296
+#define LT 297
+#define PAREN_FUNC_CALL 298
+#define SINGLE_EXPR 299
+#define NAMEPREC 300
+#define COMMAS 301
 
 
 
@@ -130,7 +144,7 @@ extern int yydebug;
 typedef union YYSTYPE
 {
 /* Line 2053 of yacc.c  */
-#line 65 "grammar.y"
+#line 68 "grammar.y"
 
     int i;
     char *s;
@@ -139,7 +153,7 @@ typedef union YYSTYPE
 
 
 /* Line 2053 of yacc.c  */
-#line 143 "y.tab.h"
+#line 157 "y.tab.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

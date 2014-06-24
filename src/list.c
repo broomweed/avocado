@@ -24,14 +24,14 @@ list *list_push(list *target, var *value) {
             return NULL;
         }
     }
-    var_copy(&target->contents[target->size], value);
+    var_copy(&target->contents[target->size + target->min_index], value);
     target->contents[target->size].bound = 1;
     target->size++;
     if (debug) printf("The new element is located at %p.\n",
             (void*)element_at(target, target->size-1));
     if (debug) {
         printf("List now: ");
-        for (int i = 0; i < target->size; i++) {
+        for (int i = target->min_index; i < target->size + target->min_index; i++) {
             printf("%s ", getvar_str_fv(element_at(target, i)));
         }
         printf("\n");
@@ -40,7 +40,7 @@ list *list_push(list *target, var *value) {
 }
 
 var *list_pop(list *target) {
-    var *to_ret = &(target->contents[target->size-1]);
+    var *to_ret = element_at(target, target->size-1);
     if (target->size <= target->max_size/2) {
         target->max_size /= 2;
         target->contents = realloc(target->contents, target->max_size * sizeof(var));
@@ -66,7 +66,7 @@ var *element_at(list *target, int index) {
         printf("Element index out of range: %d!\n", index);
         return newvar_empty_list();
     }
-    return &(target->contents[index]);
+    return &(target->contents[index + target->min_index]);
 }
 
 int set_element(list *target, int index, var *value) {
@@ -86,6 +86,7 @@ list *alloc_list() {
     list *retval = malloc(sizeof(list));
     retval->max_size = 4;
     retval->size = 0;
+    retval->min_index = 0;
     retval->contents = malloc(retval->max_size * sizeof(var));
     return retval;
 }
@@ -94,6 +95,7 @@ list *alloc_list_size(int size) {
     list *retval = malloc(sizeof(list));
     retval->max_size = size;
     retval->size = 0;
+    retval->min_index = 0;
     retval->contents = malloc(retval->max_size * sizeof(var));
     return retval;
 }
@@ -101,8 +103,8 @@ list *alloc_list_size(int size) {
 void free_list(list *l) {
     var *elem;
     if (debug) printf("Free a list at %p.\n", (void*)l);
-    for (int i = 0; i < l->size; i++) {
-        elem = element_at(l, i);
+    for (int i = 0; i < l->size + l->min_index; i++) {
+        elem = &l->contents[i];
         if (debug) printf("Free element %d -> %p.\n", i, (void*)elem);
         if (elem->str_equiv) {
             free(elem->str_equiv);
@@ -117,7 +119,7 @@ void free_list(list *l) {
     /* this free() will actually free all of them
        because they're allocated in a contiguous
        block */
-    free(element_at(l, 0));
+    free(l->contents);
     if (debug) printf("Now going to free %p.\n", (void*)l);
     free(l);
     if (debug) printf("OK!\n");

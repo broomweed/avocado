@@ -9,17 +9,20 @@ extern FILE * yyin;
 
 %option nounput
 %option noinput
+%option yylineno
 %%
   /* Tokens. */
-var                     return TOKVAR;
-print                   return TOKPRINT;
-if                      return TOKIF;
-else                    return TOKELSE;
-while                   return TOKWHILE;
-def                     return TOKDEF;
-nothing                 return TOKNOTHING;
-true                    return TOKTRUE;
-false                   return TOKFALSE;
+var                     return VAR;
+print                   return T_PRINT;
+if                      return T_IF;
+then                    return THEN;
+else                    return ELSE;
+while                   return T_WHILE;
+do                      return DO;
+def                     return DEF;
+nothing                 return T_NOTHING;
+true                    return TRUE;
+false                   return FALSE;
   /* Multi-char operators. */
 ==                      return EQ;
 \<=                     return LTEQ;
