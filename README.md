@@ -63,8 +63,8 @@ def add x, y as x + y;
 
 println add 4, 5; // prints '9\n'
 ```
-(Note: Functions without parameters do need to be called with an empty pair of parentheses `()`; otherwise it will assume you are talking about the variable that holds the function, not intending to execute the function.)
-(Note: Return values from functions with blocks don't really work right. I am working on it.)
+(Note: Functions without parameters do need to be called with an empty pair of parentheses `()`; otherwise it will assume you are talking about the variable that holds the function, not intending to execute the function.)  
+(Note: Return values from functions with blocks don't really work right. I am working on it.)  
 (Actually, the current one in the repository might not support return values at all; it will soon, though.)
 
 #### Operators and things like that
