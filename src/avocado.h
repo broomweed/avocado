@@ -2,6 +2,7 @@
 #include "uthash.h"
 #define node(x, y, z) (real_node((x), (y), (z), (yylineno)))
 #define node_function(x, y, z) (real_node_function((x), (y), (z), (yylineno)))
+#define error(x) throw_error((x), line_num)
 
 struct var;
 struct function;
@@ -47,6 +48,9 @@ typedef struct scope {
        executed within the scope; it is also set
        on function return. */
     var *last_val;
+    /* This represents whether or not the current scope
+       is being evaluated within an EVAL statement. */
+    int is_eval;
 } scope;
 
 extern scope *outermost;
@@ -138,7 +142,7 @@ extern ast_node *root;
 
 extern int debug; // Debug flag
 
-extern void error(char *msg);
+extern void throw_error(const char *msg, int line_num);
 
 extern void setvar_str_fv(var *var, char *val);
 extern void setvar_double_fv(var *var, double val);
@@ -202,7 +206,10 @@ extern char *str_dup(char *str);
 extern char *escape_chars(char *str);
 
 extern void new_scope();
+extern void new_eval_scope();
 extern void pop_scope();
+
+extern int line_num;
 
 /* --- from list.c --- */
 

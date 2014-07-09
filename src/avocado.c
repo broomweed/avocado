@@ -7,7 +7,6 @@
 
 extern scope *outermost;
 extern scope *current_scope;
-//extern int yylineno;
 extern var *eval_string(char *str);
 int line_num;
 
@@ -86,13 +85,25 @@ var *vars_quotient(var *v1, var *v2);
 var *vars_concat(var *v1, var *v2);
 var *vars_cmp(var *v1, var *v2, enum asttypes type);
 
+char *escape_chars(char *str);
+
+void new_scope();
+void new_eval_scope();
+void pop_scope();
+
+void throw_error (const char *msg, int line_num);
+
 /* function that apparently doesn't exist in GNU library */
 char *str_dup(char *str);
 
 /* ------function definitions------ */
 
-void error (char *msg) {
-    fprintf(stderr, "%s near line %d\n", msg, line_num);
+void throw_error (const char *msg, int line_num) {
+    if (!current_scope->is_eval) {
+        fprintf(stderr, "%s near line %d\n", msg, line_num);
+    } else {
+        fprintf(stderr, "%s in eval statement\n", msg);
+    }
 }
 
 void setvar_str(char *name, char *val) {
@@ -299,10 +310,7 @@ function *getvar_function_fv(var *find) {
     if (find->type == FUNCTION) return find->content.f;
     else {
         error("Cannot call a non-function");
-        function *x = malloc(sizeof(function));
-        x->parameters = NULL;
-        x->exec = NULL;
-        return x;
+        return NULL;
     }
 }
 
@@ -494,7 +502,11 @@ var *ast_eval_expr(ast_node *node) {
             break;
         case FUNCCALL:
             /* LH of FUNCCALL is the function to call; RH is the arguments. */
-            to_ret = call_func(getvar_function_fv(lh), rh->content.l);
+            ; // <-- a label can't label a declaration; a semicolon is a valid statement though.
+            function *to_call = getvar_function_fv(lh);
+            if (to_call != NULL) {
+                to_ret = call_func(to_call, rh->content.l);
+            }
             break;
         case ELEMENT:
             to_ret = element_at(getvar_list_fv(lh), getvar_int_fv(rh));
@@ -527,7 +539,7 @@ var *ast_eval_expr(ast_node *node) {
             var_copy(current_scope->last_val, lh);
             break;
         case EVAL:
-            new_scope();
+            new_eval_scope();
             to_ret = eval_string(lh->content.s);
             pop_scope();
             break;
@@ -1171,7 +1183,13 @@ void new_scope() {
     new_scope->outer = current_scope;
     new_scope->vars = NULL;
     new_scope->last_val = NULL;
+    new_scope->is_eval = 0;
     current_scope = new_scope;
+}
+
+void new_eval_scope() {
+    new_scope();
+    current_scope->is_eval = 1;
 }
 
 void pop_scope() {

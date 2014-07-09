@@ -87,7 +87,7 @@ int bracket_counts[32];
 int interp_count;
 
 void yyerror(var **result, const char *str) {
-    fprintf(stderr, "error: %s near line %d\n", str, yylineno);
+    throw_error(str, yylineno);
 }
 
 int yywrap() {
@@ -122,6 +122,7 @@ int main(int argc, char **argv) {
     outermost->vars = NULL;
     outermost->outer = NULL;
     outermost->last_val = NULL;
+    outermost->is_eval = 0;
     current_scope = outermost;
     if (debug) printf("==== PARSING PHASE ====\n");
     program_return_value = malloc(sizeof(program_return_value));
@@ -140,7 +141,7 @@ int main(int argc, char **argv) {
 
 
 /* Line 371 of yacc.c  */
-#line 144 "y.tab.c"
+#line 145 "y.tab.c"
 
 # ifndef YY_NULL
 #  if defined __cplusplus && 201103L <= __cplusplus
@@ -176,6 +177,7 @@ extern int yydebug;
    /* Put the tokens into the symbol table, so that GDB and other debuggers
       know about them.  */
    enum yytokentype {
+     END = 0,
      VAR = 258,
      T_PRINT = 259,
      T_IF = 260,
@@ -231,6 +233,7 @@ extern int yydebug;
    };
 #endif
 /* Tokens.  */
+#define END 0
 #define VAR 258
 #define T_PRINT 259
 #define T_IF 260
@@ -290,7 +293,7 @@ extern int yydebug;
 typedef union YYSTYPE
 {
 /* Line 387 of yacc.c  */
-#line 118 "grammar.y"
+#line 120 "grammar.y"
 
     int i;
     char *s;
@@ -299,7 +302,7 @@ typedef union YYSTYPE
 
 
 /* Line 387 of yacc.c  */
-#line 303 "y.tab.c"
+#line 306 "y.tab.c"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
@@ -327,7 +330,7 @@ int yyparse ();
 /* Copy the second part of user declarations.  */
 
 /* Line 390 of yacc.c  */
-#line 331 "y.tab.c"
+#line 334 "y.tab.c"
 
 #ifdef short
 # undef short
@@ -664,15 +667,15 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   180,   180,   192,   206,   209,   215,   220,   222,   224,
-     226,   228,   230,   232,   234,   239,   241,   246,   251,   256,
-     261,   263,   268,   270,   272,   274,   276,   278,   280,   282,
-     284,   286,   288,   290,   292,   294,   296,   298,   300,   302,
-     304,   306,   308,   310,   312,   314,   316,   318,   320,   322,
-     324,   326,   328,   330,   332,   334,   336,   338,   340,   342,
-     344,   346,   348,   353,   355,   357,   362,   364,   369,   371,
-     376,   379,   382,   384,   390,   392,   394,   399,   401,   406,
-     408,   410,   412,   414,   416,   418
+       0,   182,   182,   194,   208,   211,   217,   222,   224,   226,
+     228,   230,   232,   234,   236,   241,   244,   250,   255,   260,
+     265,   267,   272,   274,   276,   278,   280,   282,   284,   286,
+     288,   290,   292,   294,   296,   298,   300,   302,   304,   306,
+     308,   310,   312,   314,   316,   318,   320,   322,   324,   326,
+     328,   330,   332,   334,   336,   338,   340,   342,   344,   346,
+     348,   350,   352,   357,   359,   361,   366,   368,   373,   375,
+     380,   383,   386,   388,   394,   396,   398,   403,   405,   410,
+     412,   414,   416,   418,   420,   422
 };
 #endif
 
@@ -681,15 +684,15 @@ static const yytype_uint16 yyrline[] =
    First, the terminals, then, starting at YYNTOKENS, nonterminals.  */
 static const char *const yytname[] =
 {
-  "$end", "error", "$undefined", "\"var\"", "\"print\"", "\"if\"",
-  "\"then\"", "\"else\"", "\"while\"", "\"do\"", "\"def\"", "\"as\"",
-  "\"eval\"", "\"nothing\"", "\"true\"", "\"false\"", "\"==\"", "\"<=\"",
-  "\">=\"", "\"!=\"", "\"eq\"", "\"le\"", "\"ge\"", "\"lt\"", "\"gt\"",
-  "\"ne\"", "\"&&\"", "\"||\"", "\"!\"", "\"xor\"", "\"++\"", "\"--\"",
-  "\"+=\"", "\"-=\"", "\"*=\"", "\"/=\"", "\":=\"", "OBRACE", "'{'",
-  "EBRACE", "'}'", "INTERP_BEGIN", "INTERP_END", "UNARY_MINUS", "NAME",
-  "INTEGER", "STRLIT", "FLOAT", "PRINT_PREC", "EVAL_PREC", "FUNC_CALL",
-  "','", "COMMAS", "'='", "'<'", "'>'", "GT", "LT", "':'",
+  "\"end-of-file\"", "error", "$undefined", "\"var\"", "\"print\"",
+  "\"if\"", "\"then\"", "\"else\"", "\"while\"", "\"do\"", "\"def\"",
+  "\"as\"", "\"eval\"", "\"nothing\"", "\"true\"", "\"false\"", "\"==\"",
+  "\"<=\"", "\">=\"", "\"!=\"", "\"eq\"", "\"le\"", "\"ge\"", "\"lt\"",
+  "\"gt\"", "\"ne\"", "\"&&\"", "\"||\"", "\"!\"", "\"xor\"", "\"++\"",
+  "\"--\"", "\"+=\"", "\"-=\"", "\"*=\"", "\"/=\"", "\":=\"", "OBRACE",
+  "'{'", "EBRACE", "'}'", "INTERP_BEGIN", "INTERP_END", "UNARY_MINUS",
+  "NAME", "INTEGER", "STRLIT", "FLOAT", "PRINT_PREC", "EVAL_PREC",
+  "FUNC_CALL", "','", "COMMAS", "'='", "'<'", "'>'", "GT", "LT", "':'",
   "PAREN_FUNC_CALL", "'+'", "'-'", "'*'", "'/'", "'^'", "'!'", "'['",
   "'('", "SINGLE_EXPR", "NAMEPREC", "'`'", "';'", "')'", "']'", "$accept",
   "program", "statement_list", "block", "qualified_block", "statement",
@@ -1823,7 +1826,7 @@ yyreduce:
     {
         case 2:
 /* Line 1787 of yacc.c  */
-#line 180 "grammar.y"
+#line 182 "grammar.y"
     {
         ast_node *root = (yyvsp[(1) - (1)].n);
         if (debug) printf("==== EVALUATION PHASE ====\n");
@@ -1841,7 +1844,7 @@ yyreduce:
 
   case 3:
 /* Line 1787 of yacc.c  */
-#line 192 "grammar.y"
+#line 194 "grammar.y"
     {
         ast_node *root = (yyvsp[(1) - (1)].n);
         if (debug) printf("---- Evaluating expression... ----");
@@ -1859,7 +1862,7 @@ yyreduce:
 
   case 4:
 /* Line 1787 of yacc.c  */
-#line 206 "grammar.y"
+#line 208 "grammar.y"
     {
         if (debug) printf(": %c\n", (yyvsp[(1) - (1)].n)->op);
         (yyval.n) = node(MULTI, (yyvsp[(1) - (1)].n), NULL);;
@@ -1868,7 +1871,7 @@ yyreduce:
 
   case 5:
 /* Line 1787 of yacc.c  */
-#line 209 "grammar.y"
+#line 211 "grammar.y"
     {
         if (debug) printf("| %c\n", (yyvsp[(2) - (2)].n)->op);
         (yyval.n) = node(MULTI, (yyvsp[(1) - (2)].n), (yyvsp[(2) - (2)].n));
@@ -1877,7 +1880,7 @@ yyreduce:
 
   case 6:
 /* Line 1787 of yacc.c  */
-#line 215 "grammar.y"
+#line 217 "grammar.y"
     {
         (yyval.n) = node(ENCLOSED_SCOPE, (yyvsp[(2) - (3)].n), NULL);
     }
@@ -1885,7 +1888,7 @@ yyreduce:
 
   case 7:
 /* Line 1787 of yacc.c  */
-#line 220 "grammar.y"
+#line 222 "grammar.y"
     {
         (yyval.n) = node(IF, (yyvsp[(2) - (4)].n), node(IFELSE, (yyvsp[(4) - (4)].n), NULL));
     }
@@ -1893,7 +1896,7 @@ yyreduce:
 
   case 8:
 /* Line 1787 of yacc.c  */
-#line 222 "grammar.y"
+#line 224 "grammar.y"
     {
         (yyval.n) = node(IF, (yyvsp[(2) - (3)].n), node(IFELSE, (yyvsp[(3) - (3)].n), NULL));
     }
@@ -1901,7 +1904,7 @@ yyreduce:
 
   case 9:
 /* Line 1787 of yacc.c  */
-#line 224 "grammar.y"
+#line 226 "grammar.y"
     {
         (yyval.n) = node(IF, (yyvsp[(2) - (6)].n), node(IFELSE, (yyvsp[(4) - (6)].n), (yyvsp[(6) - (6)].n)));
     }
@@ -1909,7 +1912,7 @@ yyreduce:
 
   case 10:
 /* Line 1787 of yacc.c  */
-#line 226 "grammar.y"
+#line 228 "grammar.y"
     {
         (yyval.n) = node(IF, (yyvsp[(2) - (5)].n), node(IFELSE, (yyvsp[(3) - (5)].n), (yyvsp[(5) - (5)].n)));
     }
@@ -1917,7 +1920,7 @@ yyreduce:
 
   case 11:
 /* Line 1787 of yacc.c  */
-#line 228 "grammar.y"
+#line 230 "grammar.y"
     {
         (yyval.n) = node(WHILE, (yyvsp[(2) - (4)].n), (yyvsp[(4) - (4)].n));
     }
@@ -1925,7 +1928,7 @@ yyreduce:
 
   case 12:
 /* Line 1787 of yacc.c  */
-#line 230 "grammar.y"
+#line 232 "grammar.y"
     {
         (yyval.n) = node(WHILE, (yyvsp[(2) - (3)].n), (yyvsp[(3) - (3)].n));
     }
@@ -1933,7 +1936,7 @@ yyreduce:
 
   case 13:
 /* Line 1787 of yacc.c  */
-#line 232 "grammar.y"
+#line 234 "grammar.y"
     {
         (yyval.n) = (yyvsp[(1) - (1)].n);
     }
@@ -1941,7 +1944,7 @@ yyreduce:
 
   case 14:
 /* Line 1787 of yacc.c  */
-#line 234 "grammar.y"
+#line 236 "grammar.y"
     {
         (yyval.n) = (yyvsp[(1) - (1)].n);
     }
@@ -1949,23 +1952,25 @@ yyreduce:
 
   case 15:
 /* Line 1787 of yacc.c  */
-#line 239 "grammar.y"
+#line 241 "grammar.y"
     {
         (yyval.n) = (yyvsp[(1) - (2)].n);
+        yyerrok;
     }
     break;
 
   case 16:
 /* Line 1787 of yacc.c  */
-#line 241 "grammar.y"
+#line 244 "grammar.y"
     {
         (yyval.n) = (yyvsp[(1) - (1)].n);
+        yyerrok;
     }
     break;
 
   case 17:
 /* Line 1787 of yacc.c  */
-#line 246 "grammar.y"
+#line 250 "grammar.y"
     {
         (yyval.n) = node(ASSIGN, (yyvsp[(1) - (3)].n), (yyvsp[(3) - (3)].n));
     }
@@ -1973,7 +1978,7 @@ yyreduce:
 
   case 18:
 /* Line 1787 of yacc.c  */
-#line 251 "grammar.y"
+#line 255 "grammar.y"
     {
         (yyval.n) = node(CREATE, (yyvsp[(2) - (2)].n), NULL);
     }
@@ -1981,7 +1986,7 @@ yyreduce:
 
   case 19:
 /* Line 1787 of yacc.c  */
-#line 256 "grammar.y"
+#line 260 "grammar.y"
     {
         (yyval.n) = node(CREATE, (yyvsp[(2) - (4)].n), (yyvsp[(4) - (4)].n));
     }
@@ -1989,7 +1994,7 @@ yyreduce:
 
   case 20:
 /* Line 1787 of yacc.c  */
-#line 261 "grammar.y"
+#line 265 "grammar.y"
     {
         (yyval.n) = node_str((yyvsp[(1) - (1)].s), yylineno);
     }
@@ -1997,7 +2002,7 @@ yyreduce:
 
   case 21:
 /* Line 1787 of yacc.c  */
-#line 263 "grammar.y"
+#line 267 "grammar.y"
     {
         (yyval.n) = node(VARNAME, (yyvsp[(2) - (3)].n), NULL);
     }
@@ -2005,7 +2010,7 @@ yyreduce:
 
   case 22:
 /* Line 1787 of yacc.c  */
-#line 268 "grammar.y"
+#line 272 "grammar.y"
     {
         (yyval.n) = node(CONCAT, (yyvsp[(1) - (5)].n), node(CONCAT, (yyvsp[(3) - (5)].n), (yyvsp[(5) - (5)].n)));
     }
@@ -2013,7 +2018,7 @@ yyreduce:
 
   case 23:
 /* Line 1787 of yacc.c  */
-#line 270 "grammar.y"
+#line 274 "grammar.y"
     {
         (yyval.n) = (yyvsp[(1) - (1)].n);
     }
@@ -2021,7 +2026,7 @@ yyreduce:
 
   case 24:
 /* Line 1787 of yacc.c  */
-#line 272 "grammar.y"
+#line 276 "grammar.y"
     {
         (yyval.n) = (yyvsp[(1) - (1)].n);
     }
@@ -2029,7 +2034,7 @@ yyreduce:
 
   case 25:
 /* Line 1787 of yacc.c  */
-#line 274 "grammar.y"
+#line 278 "grammar.y"
     {
         (yyval.n) = (yyvsp[(1) - (1)].n);
     }
@@ -2037,7 +2042,7 @@ yyreduce:
 
   case 26:
 /* Line 1787 of yacc.c  */
-#line 276 "grammar.y"
+#line 280 "grammar.y"
     {
         (yyval.n) = (yyvsp[(1) - (1)].n);
     }
@@ -2045,7 +2050,7 @@ yyreduce:
 
   case 27:
 /* Line 1787 of yacc.c  */
-#line 278 "grammar.y"
+#line 282 "grammar.y"
     {
         (yyval.n) = node(PRINT, (yyvsp[(2) - (2)].n), NULL);
     }
@@ -2053,7 +2058,7 @@ yyreduce:
 
   case 28:
 /* Line 1787 of yacc.c  */
-#line 280 "grammar.y"
+#line 284 "grammar.y"
     {
         (yyval.n) = node(BAND, (yyvsp[(1) - (3)].n), (yyvsp[(3) - (3)].n));
     }
@@ -2061,7 +2066,7 @@ yyreduce:
 
   case 29:
 /* Line 1787 of yacc.c  */
-#line 282 "grammar.y"
+#line 286 "grammar.y"
     {
         (yyval.n) = node(BOR, (yyvsp[(1) - (3)].n), (yyvsp[(3) - (3)].n));
     }
@@ -2069,7 +2074,7 @@ yyreduce:
 
   case 30:
 /* Line 1787 of yacc.c  */
-#line 284 "grammar.y"
+#line 288 "grammar.y"
     {
         (yyval.n) = node(BXOR, (yyvsp[(1) - (3)].n), (yyvsp[(3) - (3)].n));
     }
@@ -2077,7 +2082,7 @@ yyreduce:
 
   case 31:
 /* Line 1787 of yacc.c  */
-#line 286 "grammar.y"
+#line 290 "grammar.y"
     {
         (yyval.n) = node(BNOT, (yyvsp[(2) - (2)].n), NULL);
     }
@@ -2085,7 +2090,7 @@ yyreduce:
 
   case 32:
 /* Line 1787 of yacc.c  */
-#line 288 "grammar.y"
+#line 292 "grammar.y"
     {
         (yyval.n) = node(NUM_GT, (yyvsp[(1) - (3)].n), (yyvsp[(3) - (3)].n));
     }
@@ -2093,7 +2098,7 @@ yyreduce:
 
   case 33:
 /* Line 1787 of yacc.c  */
-#line 290 "grammar.y"
+#line 294 "grammar.y"
     {
         (yyval.n) = node(NUM_LT, (yyvsp[(1) - (3)].n), (yyvsp[(3) - (3)].n));
     }
@@ -2101,7 +2106,7 @@ yyreduce:
 
   case 34:
 /* Line 1787 of yacc.c  */
-#line 292 "grammar.y"
+#line 296 "grammar.y"
     {
         (yyval.n) = node(NUM_EQ, (yyvsp[(1) - (3)].n), (yyvsp[(3) - (3)].n));
     }
@@ -2109,7 +2114,7 @@ yyreduce:
 
   case 35:
 /* Line 1787 of yacc.c  */
-#line 294 "grammar.y"
+#line 298 "grammar.y"
     {
         (yyval.n) = node(NUM_LTEQ, (yyvsp[(1) - (3)].n), (yyvsp[(3) - (3)].n));
     }
@@ -2117,7 +2122,7 @@ yyreduce:
 
   case 36:
 /* Line 1787 of yacc.c  */
-#line 296 "grammar.y"
+#line 300 "grammar.y"
     {
         (yyval.n) = node(NUM_GTEQ, (yyvsp[(1) - (3)].n), (yyvsp[(3) - (3)].n));
     }
@@ -2125,7 +2130,7 @@ yyreduce:
 
   case 37:
 /* Line 1787 of yacc.c  */
-#line 298 "grammar.y"
+#line 302 "grammar.y"
     {
         (yyval.n) = node(NUM_NE, (yyvsp[(1) - (3)].n), (yyvsp[(3) - (3)].n));
     }
@@ -2133,7 +2138,7 @@ yyreduce:
 
   case 38:
 /* Line 1787 of yacc.c  */
-#line 300 "grammar.y"
+#line 304 "grammar.y"
     {
         (yyval.n) = node(STR_GT, (yyvsp[(1) - (3)].n), (yyvsp[(3) - (3)].n));
     }
@@ -2141,7 +2146,7 @@ yyreduce:
 
   case 39:
 /* Line 1787 of yacc.c  */
-#line 302 "grammar.y"
+#line 306 "grammar.y"
     {
         (yyval.n) = node(STR_LT, (yyvsp[(1) - (3)].n), (yyvsp[(3) - (3)].n));
     }
@@ -2149,7 +2154,7 @@ yyreduce:
 
   case 40:
 /* Line 1787 of yacc.c  */
-#line 304 "grammar.y"
+#line 308 "grammar.y"
     {
         (yyval.n) = node(STR_EQ, (yyvsp[(1) - (3)].n), (yyvsp[(3) - (3)].n));
     }
@@ -2157,7 +2162,7 @@ yyreduce:
 
   case 41:
 /* Line 1787 of yacc.c  */
-#line 306 "grammar.y"
+#line 310 "grammar.y"
     {
         (yyval.n) = node(STR_NE, (yyvsp[(1) - (3)].n), (yyvsp[(3) - (3)].n));
     }
@@ -2165,7 +2170,7 @@ yyreduce:
 
   case 42:
 /* Line 1787 of yacc.c  */
-#line 308 "grammar.y"
+#line 312 "grammar.y"
     {
         (yyval.n) = node(STR_LTEQ, (yyvsp[(1) - (3)].n), (yyvsp[(3) - (3)].n));
     }
@@ -2173,7 +2178,7 @@ yyreduce:
 
   case 43:
 /* Line 1787 of yacc.c  */
-#line 310 "grammar.y"
+#line 314 "grammar.y"
     {
         (yyval.n) = node(STR_GTEQ, (yyvsp[(1) - (3)].n), (yyvsp[(3) - (3)].n));
     }
@@ -2181,7 +2186,7 @@ yyreduce:
 
   case 44:
 /* Line 1787 of yacc.c  */
-#line 312 "grammar.y"
+#line 316 "grammar.y"
     {
         (yyval.n) = node(CONCAT, (yyvsp[(1) - (3)].n), (yyvsp[(3) - (3)].n));
     }
@@ -2189,7 +2194,7 @@ yyreduce:
 
   case 45:
 /* Line 1787 of yacc.c  */
-#line 314 "grammar.y"
+#line 318 "grammar.y"
     {
         (yyval.n) = node(ADD, (yyvsp[(1) - (3)].n), (yyvsp[(3) - (3)].n));
     }
@@ -2197,7 +2202,7 @@ yyreduce:
 
   case 46:
 /* Line 1787 of yacc.c  */
-#line 316 "grammar.y"
+#line 320 "grammar.y"
     {
         (yyval.n) = node(SUB, (yyvsp[(1) - (3)].n), (yyvsp[(3) - (3)].n));
     }
@@ -2205,7 +2210,7 @@ yyreduce:
 
   case 47:
 /* Line 1787 of yacc.c  */
-#line 318 "grammar.y"
+#line 322 "grammar.y"
     {
         (yyval.n) = node(MUL, (yyvsp[(1) - (3)].n), (yyvsp[(3) - (3)].n));
     }
@@ -2213,7 +2218,7 @@ yyreduce:
 
   case 48:
 /* Line 1787 of yacc.c  */
-#line 320 "grammar.y"
+#line 324 "grammar.y"
     {
         (yyval.n) = node(DIV, (yyvsp[(1) - (3)].n), (yyvsp[(3) - (3)].n));
     }
@@ -2221,7 +2226,7 @@ yyreduce:
 
   case 49:
 /* Line 1787 of yacc.c  */
-#line 322 "grammar.y"
+#line 326 "grammar.y"
     {
         (yyval.n) = node(SUB, node_int(0, yylineno), (yyvsp[(2) - (2)].n));
     }
@@ -2229,7 +2234,7 @@ yyreduce:
 
   case 50:
 /* Line 1787 of yacc.c  */
-#line 324 "grammar.y"
+#line 328 "grammar.y"
     {
         (yyval.n) = node(ADD, node_int(0, yylineno), (yyvsp[(2) - (2)].n));
     }
@@ -2237,7 +2242,7 @@ yyreduce:
 
   case 51:
 /* Line 1787 of yacc.c  */
-#line 326 "grammar.y"
+#line 330 "grammar.y"
     {
         (yyval.n) = (yyvsp[(2) - (3)].n);
     }
@@ -2245,7 +2250,7 @@ yyreduce:
 
   case 52:
 /* Line 1787 of yacc.c  */
-#line 328 "grammar.y"
+#line 332 "grammar.y"
     {
         (yyval.n) = node(ELEMENT, (yyvsp[(1) - (4)].n), (yyvsp[(3) - (4)].n));
     }
@@ -2253,7 +2258,7 @@ yyreduce:
 
   case 53:
 /* Line 1787 of yacc.c  */
-#line 330 "grammar.y"
+#line 334 "grammar.y"
     {
         (yyval.n) = node(EVAL, (yyvsp[(2) - (2)].n), NULL);
     }
@@ -2261,7 +2266,7 @@ yyreduce:
 
   case 54:
 /* Line 1787 of yacc.c  */
-#line 332 "grammar.y"
+#line 336 "grammar.y"
     {
         (yyval.n) = node_str((yyvsp[(1) - (1)].s), yylineno);
     }
@@ -2269,7 +2274,7 @@ yyreduce:
 
   case 55:
 /* Line 1787 of yacc.c  */
-#line 334 "grammar.y"
+#line 338 "grammar.y"
     {
         (yyval.n) = (yyvsp[(1) - (1)].n);
     }
@@ -2277,7 +2282,7 @@ yyreduce:
 
   case 56:
 /* Line 1787 of yacc.c  */
-#line 336 "grammar.y"
+#line 340 "grammar.y"
     {
         (yyval.n) = node(VARNAME, (yyvsp[(1) - (1)].n), NULL);
     }
@@ -2285,7 +2290,7 @@ yyreduce:
 
   case 57:
 /* Line 1787 of yacc.c  */
-#line 338 "grammar.y"
+#line 342 "grammar.y"
     {
         (yyval.n) = node_int((yyvsp[(1) - (1)].i), yylineno);
     }
@@ -2293,7 +2298,7 @@ yyreduce:
 
   case 58:
 /* Line 1787 of yacc.c  */
-#line 340 "grammar.y"
+#line 344 "grammar.y"
     {
         (yyval.n) = node_dbl((yyvsp[(1) - (1)].d), yylineno);
     }
@@ -2301,7 +2306,7 @@ yyreduce:
 
   case 59:
 /* Line 1787 of yacc.c  */
-#line 342 "grammar.y"
+#line 346 "grammar.y"
     {
         (yyval.n) = node_nothing(yylineno);
     }
@@ -2309,7 +2314,7 @@ yyreduce:
 
   case 60:
 /* Line 1787 of yacc.c  */
-#line 344 "grammar.y"
+#line 348 "grammar.y"
     {
         (yyval.n) = node_boolean(1, yylineno);
     }
@@ -2317,7 +2322,7 @@ yyreduce:
 
   case 61:
 /* Line 1787 of yacc.c  */
-#line 346 "grammar.y"
+#line 350 "grammar.y"
     {
         (yyval.n) = node_boolean(0, yylineno);
     }
@@ -2325,7 +2330,7 @@ yyreduce:
 
   case 62:
 /* Line 1787 of yacc.c  */
-#line 348 "grammar.y"
+#line 352 "grammar.y"
     {
         (yyval.n) = (yyvsp[(1) - (1)].n);
     }
@@ -2333,7 +2338,7 @@ yyreduce:
 
   case 63:
 /* Line 1787 of yacc.c  */
-#line 353 "grammar.y"
+#line 357 "grammar.y"
     {
         (yyval.n) = node(FUNCCALL, (yyvsp[(1) - (4)].n), (yyvsp[(3) - (4)].n));
     }
@@ -2341,7 +2346,7 @@ yyreduce:
 
   case 64:
 /* Line 1787 of yacc.c  */
-#line 355 "grammar.y"
+#line 359 "grammar.y"
     {
         (yyval.n) = node(FUNCCALL, node(VARNAME, (yyvsp[(1) - (2)].n), NULL), (yyvsp[(2) - (2)].n));
     }
@@ -2349,7 +2354,7 @@ yyreduce:
 
   case 65:
 /* Line 1787 of yacc.c  */
-#line 357 "grammar.y"
+#line 361 "grammar.y"
     {
         (yyval.n) = node(FUNCCALL, (yyvsp[(1) - (3)].n), node(LISTEND, NULL, NULL));
     }
@@ -2357,7 +2362,7 @@ yyreduce:
 
   case 66:
 /* Line 1787 of yacc.c  */
-#line 362 "grammar.y"
+#line 366 "grammar.y"
     {
         (yyval.n) = node(LISTEND, (yyvsp[(2) - (3)].n), NULL);
     }
@@ -2365,7 +2370,7 @@ yyreduce:
 
   case 67:
 /* Line 1787 of yacc.c  */
-#line 364 "grammar.y"
+#line 368 "grammar.y"
     {
         (yyval.n) = node(LISTEND, NULL, NULL);
     }
@@ -2373,7 +2378,7 @@ yyreduce:
 
   case 68:
 /* Line 1787 of yacc.c  */
-#line 369 "grammar.y"
+#line 373 "grammar.y"
     {
         (yyval.n) = node(LISTEND, (yyvsp[(1) - (1)].n), NULL);
     }
@@ -2381,7 +2386,7 @@ yyreduce:
 
   case 69:
 /* Line 1787 of yacc.c  */
-#line 371 "grammar.y"
+#line 375 "grammar.y"
     {
         (yyval.n) = node(LISTELEM, (yyvsp[(3) - (3)].n), (yyvsp[(1) - (3)].n));
     }
@@ -2389,7 +2394,7 @@ yyreduce:
 
   case 70:
 /* Line 1787 of yacc.c  */
-#line 376 "grammar.y"
+#line 380 "grammar.y"
     {
         (yyval.n) = node(CREATE, (yyvsp[(2) - (4)].n), node_function(
            ((yyvsp[(4) - (4)].n)->op == ENCLOSED_SCOPE ? FUNC_BLOCK : 0), (yyvsp[(3) - (4)].n), (yyvsp[(4) - (4)].n)));
@@ -2398,7 +2403,7 @@ yyreduce:
 
   case 71:
 /* Line 1787 of yacc.c  */
-#line 379 "grammar.y"
+#line 383 "grammar.y"
     {
         (yyval.n) = node(CREATE, (yyvsp[(2) - (5)].n), node_function(
            ((yyvsp[(5) - (5)].n)->op == ENCLOSED_SCOPE ? FUNC_BLOCK : 0), (yyvsp[(3) - (5)].n), (yyvsp[(5) - (5)].n)));
@@ -2407,7 +2412,7 @@ yyreduce:
 
   case 72:
 /* Line 1787 of yacc.c  */
-#line 382 "grammar.y"
+#line 386 "grammar.y"
     {
         (yyval.n) = node(CREATE, (yyvsp[(2) - (3)].n), node_function(FUNC_BLOCK, node(LISTEND, NULL, NULL), (yyvsp[(3) - (3)].n)));
     }
@@ -2415,7 +2420,7 @@ yyreduce:
 
   case 73:
 /* Line 1787 of yacc.c  */
-#line 384 "grammar.y"
+#line 388 "grammar.y"
     {
         (yyval.n) = node(CREATE, (yyvsp[(2) - (4)].n), node_function(
            ((yyvsp[(4) - (4)].n)->op == ENCLOSED_SCOPE ? FUNC_BLOCK : 0), node(LISTEND, NULL, NULL), (yyvsp[(4) - (4)].n)));
@@ -2424,7 +2429,7 @@ yyreduce:
 
   case 74:
 /* Line 1787 of yacc.c  */
-#line 390 "grammar.y"
+#line 394 "grammar.y"
     {
         (yyval.n) = (yyvsp[(2) - (3)].n);
     }
@@ -2432,7 +2437,7 @@ yyreduce:
 
   case 75:
 /* Line 1787 of yacc.c  */
-#line 392 "grammar.y"
+#line 396 "grammar.y"
     {
         (yyval.n) = (yyvsp[(1) - (1)].n);
     }
@@ -2440,7 +2445,7 @@ yyreduce:
 
   case 76:
 /* Line 1787 of yacc.c  */
-#line 394 "grammar.y"
+#line 398 "grammar.y"
     {
         (yyval.n) = node(LISTEND, NULL, NULL);
     }
@@ -2448,7 +2453,7 @@ yyreduce:
 
   case 77:
 /* Line 1787 of yacc.c  */
-#line 399 "grammar.y"
+#line 403 "grammar.y"
     {
         (yyval.n) = node(LISTEND, (yyvsp[(1) - (1)].n), NULL);
     }
@@ -2456,7 +2461,7 @@ yyreduce:
 
   case 78:
 /* Line 1787 of yacc.c  */
-#line 401 "grammar.y"
+#line 405 "grammar.y"
     {
         (yyval.n) = node(LISTELEM, (yyvsp[(3) - (3)].n), (yyvsp[(1) - (3)].n));
     }
@@ -2464,7 +2469,7 @@ yyreduce:
 
   case 79:
 /* Line 1787 of yacc.c  */
-#line 406 "grammar.y"
+#line 410 "grammar.y"
     {
         (yyval.n) = node(COMPOUND, (yyvsp[(1) - (2)].n), node(ADD, NULL, node_int(1, yylineno)));
     }
@@ -2472,7 +2477,7 @@ yyreduce:
 
   case 80:
 /* Line 1787 of yacc.c  */
-#line 408 "grammar.y"
+#line 412 "grammar.y"
     {
         (yyval.n) = node(COMPOUND, (yyvsp[(1) - (2)].n), node(SUB, NULL, node_int(1, yylineno)));
     }
@@ -2480,7 +2485,7 @@ yyreduce:
 
   case 81:
 /* Line 1787 of yacc.c  */
-#line 410 "grammar.y"
+#line 414 "grammar.y"
     {
         (yyval.n) = node(COMPOUND, (yyvsp[(1) - (3)].n), node(ADD, NULL, (yyvsp[(3) - (3)].n)));
     }
@@ -2488,7 +2493,7 @@ yyreduce:
 
   case 82:
 /* Line 1787 of yacc.c  */
-#line 412 "grammar.y"
+#line 416 "grammar.y"
     {
         (yyval.n) = node(COMPOUND, (yyvsp[(1) - (3)].n), node(SUB, NULL, (yyvsp[(3) - (3)].n)));
     }
@@ -2496,7 +2501,7 @@ yyreduce:
 
   case 83:
 /* Line 1787 of yacc.c  */
-#line 414 "grammar.y"
+#line 418 "grammar.y"
     {
         (yyval.n) = node(COMPOUND, (yyvsp[(1) - (3)].n), node(MUL, NULL, (yyvsp[(3) - (3)].n)));
     }
@@ -2504,7 +2509,7 @@ yyreduce:
 
   case 84:
 /* Line 1787 of yacc.c  */
-#line 416 "grammar.y"
+#line 420 "grammar.y"
     {
         (yyval.n) = node(COMPOUND, (yyvsp[(1) - (3)].n), node(DIV, NULL, (yyvsp[(3) - (3)].n)));
     }
@@ -2512,7 +2517,7 @@ yyreduce:
 
   case 85:
 /* Line 1787 of yacc.c  */
-#line 418 "grammar.y"
+#line 422 "grammar.y"
     {
         (yyval.n) = node(COMPOUND, (yyvsp[(1) - (3)].n), node(CONCAT, NULL, (yyvsp[(3) - (3)].n)));
     }
@@ -2520,7 +2525,7 @@ yyreduce:
 
 
 /* Line 1787 of yacc.c  */
-#line 2524 "y.tab.c"
+#line 2529 "y.tab.c"
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -2752,5 +2757,5 @@ yyreturn:
 
 
 /* Line 2050 of yacc.c  */
-#line 421 "grammar.y"
+#line 425 "grammar.y"
 

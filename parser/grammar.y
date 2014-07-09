@@ -21,7 +21,7 @@ int bracket_counts[32];
 int interp_count;
 
 void yyerror(var **result, const char *str) {
-    fprintf(stderr, "error: %s near line %d\n", str, yylineno);
+    throw_error(str, yylineno);
 }
 
 int yywrap() {
@@ -56,6 +56,7 @@ int main(int argc, char **argv) {
     outermost->vars = NULL;
     outermost->outer = NULL;
     outermost->last_val = NULL;
+    outermost->is_eval = 0;
     current_scope = outermost;
     if (debug) printf("==== PARSING PHASE ====\n");
     program_return_value = malloc(sizeof(program_return_value));
@@ -114,6 +115,7 @@ int main(int argc, char **argv) {
 %token INTERP_BEGIN
 %token INTERP_END
 %token UNARY_MINUS
+%token END 0 "end-of-file"
 %union
 {
     int i;
@@ -238,8 +240,10 @@ qualified_block:
 statement:
     expr ';' {
         $$ = $1;
+        yyerrok;
     } | qualified_block {
         $$ = $1;
+        yyerrok;
     }
 
 assignment:

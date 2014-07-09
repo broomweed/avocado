@@ -46,6 +46,7 @@ extern int yydebug;
    /* Put the tokens into the symbol table, so that GDB and other debuggers
       know about them.  */
    enum yytokentype {
+     END = 0,
      VAR = 258,
      T_PRINT = 259,
      T_IF = 260,
@@ -101,6 +102,7 @@ extern int yydebug;
    };
 #endif
 /* Tokens.  */
+#define END 0
 #define VAR 258
 #define T_PRINT 259
 #define T_IF 260
@@ -160,7 +162,7 @@ extern int yydebug;
 typedef union YYSTYPE
 {
 /* Line 2053 of yacc.c  */
-#line 118 "grammar.y"
+#line 120 "grammar.y"
 
     int i;
     char *s;
@@ -169,7 +171,7 @@ typedef union YYSTYPE
 
 
 /* Line 2053 of yacc.c  */
-#line 173 "y.tab.h"
+#line 175 "y.tab.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
