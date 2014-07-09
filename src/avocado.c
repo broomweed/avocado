@@ -3,10 +3,12 @@
 #include <stdlib.h>
 #include "uthash.h"
 #include "avocado.h"
+#include "y.tab.h"
 
 extern scope *outermost;
 extern scope *current_scope;
-extern int yylineno;
+//extern int yylineno;
+extern var *eval_string(char *str);
 int line_num;
 
 /* ------function prototypes------ */
@@ -47,13 +49,13 @@ var *find_var(char *name);
 
 /* ast stuff */
 var *ast_eval_expr(ast_node *node);
-ast_node *node(enum asttypes type, ast_node *lhs, ast_node *rhs);
-ast_node *node_int(int val);
-ast_node *node_str(char *val);
-ast_node *node_dbl(double val);
-ast_node *node_name(char *val);
-ast_node *node_boolean(int val);
-ast_node *node_nothing();
+ast_node *real_node(enum asttypes type, ast_node *lhs, ast_node *rhs, int line_num);
+ast_node *node_int(int val, int line_num);
+ast_node *node_str(char *val, int line_num);
+ast_node *node_dbl(double val, int line_num);
+ast_node *node_name(char *val, int line_num);
+ast_node *node_boolean(int val, int line_num);
+ast_node *node_nothing(int line_num);
 ast_node *ast_copy(ast_node *node);
 
 /* mem stuff */
@@ -72,7 +74,7 @@ var *newvar_boolean(int val);
 var *newvar_list(list *val);
 var *newvar_empty_list();
 var *newvar_nothing();
-var *newvar_func(list *param_names, ast_node *exec);
+var *newvar_func(list *param_names, ast_node *exec, enum flags flags);
 var *var_assign(char *name, var *value);
 var *var_assign_fv(var *new, var *value);
 
@@ -296,7 +298,7 @@ list *getvar_list_fv(var *find) {
 function *getvar_function_fv(var *find) {
     if (find->type == FUNCTION) return find->content.f;
     else {
-        printf("Cannot call a non-function!\n");
+        error("Cannot call a non-function");
         function *x = malloc(sizeof(function));
         x->parameters = NULL;
         x->exec = NULL;
@@ -385,7 +387,8 @@ var *ast_eval_expr(ast_node *node) {
             /* Now, evaluate the name list... */
             lh = ast_eval_expr(node->content.children.lhs);
             /* And create a new function that has it and the RHS (which will be copied.) */
-            rh = newvar_func(lh->content.l, node->content.children.rhs);
+            rh = newvar_func(lh->content.l, node->content.children.rhs, node->flags);
+            printf("FLAGS: %d\n", rh->content.f->flags);
             free(lh);
             return rh;
         case MULTI:
@@ -399,7 +402,7 @@ var *ast_eval_expr(ast_node *node) {
                the RHS is an operation with a null RHS. */
             /* assign the name to the lhs of the other statement (which should be NULL) */
             node->content.children.rhs->content.children.lhs =
-                node_name(node->content.children.lhs->content.termstr);
+                node_name(node->content.children.lhs->content.termstr, line_num);
             /* evaluate it and assign the result to the LHS of this statement */
             lh = ast_eval_expr(node->content.children.lhs);
             rh = ast_eval_expr(node->content.children.rhs);
@@ -417,12 +420,12 @@ var *ast_eval_expr(ast_node *node) {
             if (debug) printf("If.\n");
             lh = ast_eval_expr(node->content.children.lhs);
             if (getvar_boolean_fv(lh)) {
-                ast_eval_expr(node->content.children.rhs->content.children.lhs);
+                to_ret = ast_eval_expr(node->content.children.rhs->content.children.lhs);
             } else {
-                ast_eval_expr(node->content.children.rhs->content.children.rhs);
+                to_ret = ast_eval_expr(node->content.children.rhs->content.children.rhs);
             }
             if (!lh->bound) free_var(lh);
-            return NULL;
+            return to_ret;
         case WHILE:
             if (debug) printf("While.\n");
             lh = ast_eval_expr(node->content.children.lhs);
@@ -491,7 +494,7 @@ var *ast_eval_expr(ast_node *node) {
             break;
         case FUNCCALL:
             /* LH of FUNCCALL is the function to call; RH is the arguments. */
-            call_func(lh->content.f, rh->content.l);
+            to_ret = call_func(getvar_function_fv(lh), rh->content.l);
             break;
         case ELEMENT:
             to_ret = element_at(getvar_list_fv(lh), getvar_int_fv(rh));
@@ -517,7 +520,16 @@ var *ast_eval_expr(ast_node *node) {
             }
             break;
         case EXPR:
-            /* do nothing; this is just here so we can throw away the return value safely */
+            if (current_scope->last_val != NULL) {
+                free_var(current_scope->last_val);
+            }
+            current_scope->last_val = malloc(sizeof(var));
+            var_copy(current_scope->last_val, lh);
+            break;
+        case EVAL:
+            new_scope();
+            to_ret = eval_string(lh->content.s);
+            pop_scope();
             break;
         /* COMPARISONS */
         /* ... are handled by a different function because they're tedious and long */
@@ -549,44 +561,53 @@ var *ast_eval_expr(ast_node *node) {
     return to_ret;
 }
 
-ast_node *node(enum asttypes type, ast_node *lhs, ast_node *rhs) {
+ast_node *real_node(enum asttypes type, ast_node *lhs, ast_node *rhs, int line_num) {
     ast_node *to_return = malloc(sizeof(ast_node));
     to_return->op = type;
     to_return->content.children.lhs = lhs;
     to_return->content.children.rhs = rhs;
-    to_return->line_num = yylineno;
+    to_return->line_num = line_num;
+    to_return->flags = 0;
     return to_return;
 }
 
-ast_node *node_int(int val) {
+ast_node *node_int(int val, int line_num) {
     ast_node *to_return = malloc(sizeof(ast_node));
     to_return->op = TERMINT;
     to_return->content.termint = val;
+    to_return->line_num = line_num;
+    to_return->flags = 0;
     return to_return;
 }
 
-ast_node *node_dbl(double val) {
+ast_node *node_dbl(double val, int line_num) {
     ast_node *to_return = malloc(sizeof(ast_node));
     to_return->op = TERMDBL;
     to_return->content.termdbl = val;
+    to_return->line_num = line_num;
+    to_return->flags = 0;
     return to_return;
 }
 
-ast_node *node_str(char *val) {
+ast_node *node_str(char *val, int line_num) {
     ast_node *to_return = malloc(sizeof(ast_node));
     to_return->op = TERMSTR;
     to_return->content.termstr = val;
+    to_return->line_num = line_num;
+    to_return->flags = 0;
     return to_return;
 }
 
-ast_node *node_name(char *val) {
+ast_node *node_name(char *val, int line_num) {
     ast_node *to_return = malloc(sizeof(ast_node));
     to_return->op = TERMNAME;
     to_return->content.termstr = val;
+    to_return->line_num = line_num;
+    to_return->flags = 0;
     return to_return;
 }
 
-ast_node *node_boolean(int val) {
+ast_node *node_boolean(int val, int line_num) {
     ast_node *to_return = malloc(sizeof(ast_node));
     if (to_return == NULL) {
         printf("Possibly out of memory!\n");
@@ -594,12 +615,16 @@ ast_node *node_boolean(int val) {
     }
     to_return->op = TERMBOOLEAN;
     to_return->content.termint = val;
+    to_return->line_num = line_num;
+    to_return->flags = 0;
     return to_return;
 }
 
-ast_node *node_nothing() {
+ast_node *node_nothing(int line_num) {
     ast_node *to_return = malloc(sizeof(ast_node));
     to_return->op = EMPTY;
+    to_return->line_num = line_num;
+    to_return->flags = 0;
     return to_return;
 }
 
@@ -670,7 +695,7 @@ void cleanup() {
         HASH_DEL(current_scope->vars, to_del);
         unbind(to_del);
     }
-    free_node(root);
+    //free_node(root);
     free(current_scope);
 }
 
@@ -751,7 +776,7 @@ ast_node *ast_copy(ast_node *node) {
     return new_node;
 }
 
-var *newvar_func(list *param_names, ast_node *exec) {
+var *newvar_func(list *param_names, ast_node *exec, enum flags flags) {
     list *l = alloc_list_size(param_names->size);
     list_copy(l, param_names);
     /* now copy the AST nodes */
@@ -766,6 +791,7 @@ var *newvar_func(list *param_names, ast_node *exec) {
         }
         v->content.f->parameters = l;
         v->content.f->exec = new_node;
+        v->content.f->flags = flags;
         v->bound = 0;
         v->str_equiv = NULL;
     }
@@ -1144,6 +1170,7 @@ void new_scope() {
     scope *new_scope = malloc(sizeof(scope));
     new_scope->outer = current_scope;
     new_scope->vars = NULL;
+    new_scope->last_val = NULL;
     current_scope = new_scope;
 }
 
@@ -1154,6 +1181,9 @@ void pop_scope() {
     HASH_ITER(hh, current_scope->vars, to_del, tmp) {
         HASH_DEL(current_scope->vars, to_del);
         unbind(to_del);
+    }
+    if (current_scope->last_val) {
+        free_var(current_scope->last_val);
     }
     if (current_scope) {
         free(current_scope);

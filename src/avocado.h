@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include "uthash.h"
+#define node(x, y, z) (real_node((x), (y), (z), (yylineno)))
+#define node_function(x, y, z) (real_node_function((x), (y), (z), (yylineno)))
 
 struct var;
 struct function;
@@ -51,6 +53,7 @@ extern scope *outermost;
 extern scope *current_scope;
 
 enum asttypes {
+    EVAL = '\'',
     ADD = '+',
     SUB = '-',
     MUL = '*',
@@ -96,9 +99,18 @@ enum asttypes {
     ENCLOSED_SCOPE = '{',
 };
 
+enum flags {
+    FUNC_BLOCK = 1,
+};
+
 typedef struct ast_node {
     enum asttypes op;
     int line_num;
+    /* Flags indicate something special about
+       this node. Usually unused. Right now,
+       only functions use it to indicate whether
+       or not they need their own special scope. */
+    enum flags flags;
     union {
         int termint;
         char *termstr;
@@ -119,6 +131,7 @@ typedef struct function {
     /* The AST node that will be executed when
        the function will be called. */
     struct ast_node *exec;
+    enum flags flags;
 } function;
 
 extern ast_node *root;
@@ -149,13 +162,13 @@ extern var *addvar(char *name);
 extern var *find_var(char *name);
 
 extern var *ast_eval_expr(ast_node *node);
-extern ast_node *node(enum asttypes type, ast_node *lhs, ast_node *rhs);
-extern ast_node *node_int(int val);
-extern ast_node *node_str(char *val);
-extern ast_node *node_dbl(double val);
-extern ast_node *node_name(char *val);
-extern ast_node *node_nothing();
-extern ast_node *node_boolean(int val);
+extern ast_node *real_node(enum asttypes type, ast_node *lhs, ast_node *rhs, int line_num);
+extern ast_node *node_int(int val, int line_num);
+extern ast_node *node_str(char *val, int line_num);
+extern ast_node *node_dbl(double val, int line_num);
+extern ast_node *node_name(char *val, int line_num);
+extern ast_node *node_nothing(int line_num);
+extern ast_node *node_boolean(int val, int line_num);
 ast_node *ast_copy(ast_node *node);
 
 extern void free_node(ast_node *node);
@@ -169,6 +182,7 @@ extern var *newvar_dbl(double val);
 extern var *newvar_boolean(int val);
 extern var *newvar_list(list *val);
 extern var *newvar_empty_list();
+var *newvar_func(list *param_names, ast_node *exec, enum flags flags);
 extern var *newvar_nothing();
 
 extern void bind(char *name, var *value);
@@ -207,5 +221,6 @@ extern void var_copy (var *dest, var *src);
 
 extern void free_func(function *f);
 extern function *func_copy(function *src);
-extern function *create_func(list *parameters, ast_node *exec);
+extern function *create_func(list *parameters, ast_node *exec, enum flags flags);
 extern var *call_func(function *func, list *args);
+extern ast_node *real_node_function(int flags, ast_node *lhs, ast_node *rhs, int line_num);

@@ -14,10 +14,7 @@ void free_list(list *l);
 void var_copy(var *dest, var *src);
 
 list *list_push(list *target, var *value) {
-    if (debug) printf("Push element!\n");
-    if (debug) printf("target: %p; value: %p.\n", (void*)target, (void*)value);
     if (target->size+2 > target->max_size) {
-        if (debug) printf("It's pretty big.\n");
         target->max_size *= 2;
         target->contents = realloc(target->contents, target->max_size * sizeof(var));
         if (target->contents == NULL) {
@@ -27,14 +24,12 @@ list *list_push(list *target, var *value) {
     var_copy(&target->contents[target->size + target->min_index], value);
     target->contents[target->size].bound = 1;
     target->size++;
-    if (debug) printf("The new element is located at %p.\n",
-            (void*)element_at(target, target->size-1));
     if (debug) {
         printf("List now: ");
         for (int i = target->min_index; i < target->size + target->min_index; i++) {
             printf("%s ", getvar_str_fv(element_at(target, i)));
         }
-        printf("\n");
+        printf(" (size: %d)\n", target->size);
     }
     return target;
 }
@@ -60,16 +55,9 @@ var *list_shift(list *target) {
         var_copy(to_ret, element_at(target, 0));
         target->min_index++;
         target->size--;
-        if (debug) {
-            printf("List now: ");
-            for (int i = target->min_index; i < target->size + target->min_index; i++) {
-                printf("%s ", getvar_str_fv(element_at(target, i)));
-            }
-            printf("\n");
-        }
         return to_ret;
     } else {
-        if (debug) printf("But it is empty!");
+        if (debug) printf("But it is empty!\n");
         return NULL;
     }
 }
@@ -142,7 +130,7 @@ void free_list(list *l) {
        because they're allocated in a contiguous
        block */
     free(l->contents);
-    if (debug) printf("Now going to free %p.\n", (void*)l);
+    if (debug) printf("Now going to free %p...", (void*)l);
     free(l);
     if (debug) printf("OK!\n");
 }

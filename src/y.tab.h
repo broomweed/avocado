@@ -54,42 +54,50 @@ extern int yydebug;
      T_WHILE = 263,
      DO = 264,
      DEF = 265,
-     T_NOTHING = 266,
-     TRUE = 267,
-     FALSE = 268,
-     EQ = 269,
-     LTEQ = 270,
-     GTEQ = 271,
-     NE = 272,
-     SEQ = 273,
-     SLTEQ = 274,
-     SGTEQ = 275,
-     SLT = 276,
-     SGT = 277,
-     SNE = 278,
-     AND = 279,
-     OR = 280,
-     NOT = 281,
-     XOR = 282,
-     INCR = 283,
-     DECR = 284,
-     PLUSEQUALS = 285,
-     MINUSEQUALS = 286,
-     TIMESEQUALS = 287,
-     DIVEQUALS = 288,
-     CONCATEQUALS = 289,
-     UNARY_MINUS = 290,
-     NAME = 291,
-     INTEGER = 292,
-     STRLIT = 293,
-     FLOAT = 294,
-     FUNC_CALL = 295,
-     COMMAS = 296,
-     GT = 297,
-     LT = 298,
-     PAREN_FUNC_CALL = 299,
-     SINGLE_EXPR = 300,
-     NAMEPREC = 301
+     AS = 266,
+     T_EVAL = 267,
+     T_NOTHING = 268,
+     TRUE = 269,
+     FALSE = 270,
+     EQ = 271,
+     LTEQ = 272,
+     GTEQ = 273,
+     NE = 274,
+     SEQ = 275,
+     SLTEQ = 276,
+     SGTEQ = 277,
+     SLT = 278,
+     SGT = 279,
+     SNE = 280,
+     AND = 281,
+     OR = 282,
+     NOT = 283,
+     XOR = 284,
+     INCR = 285,
+     DECR = 286,
+     PLUSEQUALS = 287,
+     MINUSEQUALS = 288,
+     TIMESEQUALS = 289,
+     DIVEQUALS = 290,
+     CONCATEQUALS = 291,
+     OBRACE = 292,
+     EBRACE = 293,
+     INTERP_BEGIN = 294,
+     INTERP_END = 295,
+     UNARY_MINUS = 296,
+     NAME = 297,
+     INTEGER = 298,
+     STRLIT = 299,
+     FLOAT = 300,
+     PRINT_PREC = 301,
+     EVAL_PREC = 302,
+     FUNC_CALL = 303,
+     COMMAS = 304,
+     GT = 305,
+     LT = 306,
+     PAREN_FUNC_CALL = 307,
+     SINGLE_EXPR = 308,
+     NAMEPREC = 309
    };
 #endif
 /* Tokens.  */
@@ -101,42 +109,50 @@ extern int yydebug;
 #define T_WHILE 263
 #define DO 264
 #define DEF 265
-#define T_NOTHING 266
-#define TRUE 267
-#define FALSE 268
-#define EQ 269
-#define LTEQ 270
-#define GTEQ 271
-#define NE 272
-#define SEQ 273
-#define SLTEQ 274
-#define SGTEQ 275
-#define SLT 276
-#define SGT 277
-#define SNE 278
-#define AND 279
-#define OR 280
-#define NOT 281
-#define XOR 282
-#define INCR 283
-#define DECR 284
-#define PLUSEQUALS 285
-#define MINUSEQUALS 286
-#define TIMESEQUALS 287
-#define DIVEQUALS 288
-#define CONCATEQUALS 289
-#define UNARY_MINUS 290
-#define NAME 291
-#define INTEGER 292
-#define STRLIT 293
-#define FLOAT 294
-#define FUNC_CALL 295
-#define COMMAS 296
-#define GT 297
-#define LT 298
-#define PAREN_FUNC_CALL 299
-#define SINGLE_EXPR 300
-#define NAMEPREC 301
+#define AS 266
+#define T_EVAL 267
+#define T_NOTHING 268
+#define TRUE 269
+#define FALSE 270
+#define EQ 271
+#define LTEQ 272
+#define GTEQ 273
+#define NE 274
+#define SEQ 275
+#define SLTEQ 276
+#define SGTEQ 277
+#define SLT 278
+#define SGT 279
+#define SNE 280
+#define AND 281
+#define OR 282
+#define NOT 283
+#define XOR 284
+#define INCR 285
+#define DECR 286
+#define PLUSEQUALS 287
+#define MINUSEQUALS 288
+#define TIMESEQUALS 289
+#define DIVEQUALS 290
+#define CONCATEQUALS 291
+#define OBRACE 292
+#define EBRACE 293
+#define INTERP_BEGIN 294
+#define INTERP_END 295
+#define UNARY_MINUS 296
+#define NAME 297
+#define INTEGER 298
+#define STRLIT 299
+#define FLOAT 300
+#define PRINT_PREC 301
+#define EVAL_PREC 302
+#define FUNC_CALL 303
+#define COMMAS 304
+#define GT 305
+#define LT 306
+#define PAREN_FUNC_CALL 307
+#define SINGLE_EXPR 308
+#define NAMEPREC 309
 
 
 
@@ -144,7 +160,7 @@ extern int yydebug;
 typedef union YYSTYPE
 {
 /* Line 2053 of yacc.c  */
-#line 68 "grammar.y"
+#line 118 "grammar.y"
 
     int i;
     char *s;
@@ -153,7 +169,7 @@ typedef union YYSTYPE
 
 
 /* Line 2053 of yacc.c  */
-#line 157 "y.tab.h"
+#line 173 "y.tab.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
@@ -170,7 +186,7 @@ int yyparse ();
 #endif
 #else /* ! YYPARSE_PARAM */
 #if defined __STDC__ || defined __cplusplus
-int yyparse (void);
+int yyparse (var **result);
 #else
 int yyparse ();
 #endif

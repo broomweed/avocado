@@ -8,14 +8,19 @@ FILE *yyin;
 extern int yychar;
 extern int yylineno;
 int debug;
+int yydebug = 1;
 
 int yylex(void);
-int yyparse(void);
+int yyparse(var **result);
 
 scope *outermost;
 scope *current_scope;
+var **program_return_value;
 
-void yyerror(const char *str) {
+int bracket_counts[32];
+int interp_count;
+
+void yyerror(var **result, const char *str) {
     fprintf(stderr, "error: %s near line %d\n", str, yylineno);
 }
 
@@ -46,23 +51,68 @@ int main(int argc, char **argv) {
                 argv[argc-1]);
         return 1;
     }
+    interp_count = 0;
     outermost = malloc(sizeof(scope));
     outermost->vars = NULL;
     outermost->outer = NULL;
+    outermost->last_val = NULL;
     current_scope = outermost;
     if (debug) printf("==== PARSING PHASE ====\n");
-    yyparse();
+    program_return_value = malloc(sizeof(program_return_value));
+    yyparse(program_return_value);
+    if (yyin) fclose(yyin);
+    cleanup();
+    free_var(*program_return_value);
+    free(program_return_value);
+    //printf("%p", (void*)program_return_value);
+    /*if (*program_return_value) {
+        return (*program_return_value)->content.i;
+    } else {*/
     return 0;
+    /*}*/
 }
 
-ast_node *root;
-
 %}
+%parse-param { var **result }
 
-%token VAR T_PRINT T_IF THEN ELSE T_WHILE DO DEF
-%token T_NOTHING TRUE FALSE
-%token EQ LTEQ GTEQ NE SEQ SLTEQ SGTEQ SLT SGT SNE AND OR NOT XOR
-%token INCR DECR PLUSEQUALS MINUSEQUALS TIMESEQUALS DIVEQUALS CONCATEQUALS
+%token VAR "var"
+%token T_PRINT "print"
+%token T_IF "if"
+%token THEN "then"
+%token ELSE "else"
+%token T_WHILE "while"
+%token DO "do"
+%token DEF "def"
+%token AS "as"
+%token T_EVAL "eval"
+%token T_NOTHING "nothing"
+%token TRUE "true"
+%token FALSE "false"
+%token EQ "=="
+%token LTEQ "<="
+%token GTEQ ">="
+%token NE "!="
+%token SEQ "eq"
+%token SLTEQ "le"
+%token SGTEQ "ge"
+%token SLT "lt"
+%token SGT "gt"
+%token SNE "ne"
+%token AND "&&"
+%token OR "||"
+%token NOT "!"
+%token XOR "xor"
+%token INCR "++"
+%token DECR "--"
+%token PLUSEQUALS "+="
+%token MINUSEQUALS "-="
+%token TIMESEQUALS "*="
+%token DIVEQUALS "/="
+%token CONCATEQUALS ":="
+%token OBRACE '{'
+%token EBRACE '}'
+%token INTERP_BEGIN
+%token INTERP_END
 %token UNARY_MINUS
 %union
 {
@@ -75,11 +125,10 @@ ast_node *root;
 %token <i> INTEGER
 %token <s> STRLIT
 %token <d> FLOAT
-%type <n> statementlist
+%type <n> statement_list
 %type <n> block
-%type <n> qualifiedblock
+%type <n> qualified_block
 %type <n> statement
-%type <n> singlestatement
 %type <n> assignment
 %type <n> declare
 %type <n> newvar
@@ -89,25 +138,31 @@ ast_node *root;
 %type <n> list
 %type <n> function_def
 %type <n> function_call
+%type <n> function_params
 %type <n> comma_names
 %type <n> comma_exprs
 
+%right PRINT_PREC
+%right EVAL_PREC
 %left FUNC_CALL
 %left ','
 %left COMMAS
-%left '('
+%right '='
 %left AND OR NOT XOR
 %left '<' '>' EQ LTEQ GTEQ LT GT NE SEQ SLTEQ SGTEQ SLT SGT SNE
+%left "+=" "-=" "*=" "/=" ":="
 %left ':'
+%nonassoc PAREN_FUNC_CALL
 %left '+' '-'
 %left '*' '/'
 %right '^'
-%left PAREN_FUNC_CALL
 %left '!'
 %left '['
 %left UNARY_MINUS
+%left '('
 %left SINGLE_EXPR
 %left NAMEPREC
+%left INTERP_BEGIN INTERP_END
 %nonassoc NAME T_NOTHING TRUE FALSE INTEGER STRLIT FLOAT '`'
 
 %expect 2
@@ -119,33 +174,49 @@ ast_node *root;
         else
         w();
      (it assumes the else applies to 'if y,' to spare your wondering)
+     there are 2 of these for some reason, I forget why
  */
 %%
-program: statementlist {
-        root = $1;
+program: statement_list {
+        ast_node *root = $1;
         if (debug) printf("==== EVALUATION PHASE ====\n");
         if (debug) printf("Evaluating root AST node...\n");
-        ast_eval_expr(root);
+        if (root != NULL) {
+            *result = ast_eval_expr(root);
+        } else {
+            *result = NULL;
+        }
         if (debug) printf("\ndone.\n");
-        fclose(yyin);
         if (debug) printf("==== CLEANUP PHASE ====\n");
-        cleanup();
+        free_node(root);
+    } | expr {
+        ast_node *root = $1;
+        if (debug) printf("---- Evaluating expression... ----");
+        if (debug) printf("Evaluating root AST node...\n");
+        if (root != NULL) {
+            *result = ast_eval_expr(root);
+        } else {
+            *result = NULL;
+        }
+        if (debug) printf("\ndone.\n");
+        if (debug) printf("---- Cleaning up expression. ----");
+        free_node(root);
     }
 
-statementlist: {
-        if (debug) printf("...\n");
-        $$ = NULL;
-    } | statementlist statement {
-        if (debug) printf(": %c\n", $2->op);
+statement_list: statement {
+        if (debug) printf(": %c\n", $1->op);
+        $$ = node(MULTI, $1, NULL);;
+    } | statement_list statement {
+        if (debug) printf("| %c\n", $2->op);
         $$ = node(MULTI, $1, $2);
     }
 
 block:
-    '{' statementlist '}' {
+    OBRACE statement_list EBRACE {
         $$ = node(ENCLOSED_SCOPE, $2, NULL);
     }
 
-qualifiedblock:
+qualified_block:
     T_IF expr THEN statement {
         $$ = node(IF, $2, node(IFELSE, $4, NULL));
     } | T_IF expr block {
@@ -165,25 +236,10 @@ qualifiedblock:
     }
 
 statement:
-    singlestatement ';' {
+    expr ';' {
         $$ = $1;
-    } | qualifiedblock {
+    } | qualified_block {
         $$ = $1;
-    }
-
-singlestatement:
-    assignment {
-        $$ = $1;
-    } | compound {
-        $$ = $1;
-    } | newvar {
-        $$ = $1;
-    } | declare {
-        $$ = $1;
-    } | expr {
-        $$ = node(EXPR, $1, NULL);
-    } | T_PRINT expr {
-        $$ = node(PRINT, $2, NULL);
     }
 
 assignment:
@@ -203,13 +259,25 @@ declare:
 
 varname:
     NAME {
-        $$ = node_str($1);
+        $$ = node_str($1, yylineno);
     } | '`' expr '`' {
         $$ = node(VARNAME, $2, NULL);
     }
 
 expr:
-    expr AND expr {
+    expr INTERP_BEGIN expr INTERP_END expr {
+        $$ = node(CONCAT, $1, node(CONCAT, $3, $5));
+    } | assignment {
+        $$ = $1;
+    } | compound {
+        $$ = $1;
+    } | newvar {
+        $$ = $1;
+    } | declare {
+        $$ = $1;
+    } | T_PRINT expr %prec PRINT_PREC {
+        $$ = node(PRINT, $2, NULL);
+    } | expr AND expr {
         $$ = node(BAND, $1, $3);
     } | expr OR expr {
         $$ = node(BOR, $1, $3);
@@ -252,38 +320,42 @@ expr:
     } | expr '/' expr {
         $$ = node(DIV, $1, $3);
     } | '-' expr %prec UNARY_MINUS {
-        $$ = node(SUB, node_int(0), $2);
+        $$ = node(SUB, node_int(0, yylineno), $2);
     } | '+' expr %prec UNARY_MINUS {
-        $$ = node(ADD, node_int(0), $2);
+        $$ = node(ADD, node_int(0, yylineno), $2);
     } | '(' expr ')' {
         $$ = $2;
     } | expr '[' expr ']' {
         $$ = node(ELEMENT, $1, $3);
+    } | T_EVAL expr %prec EVAL_PREC {
+        $$ = node(EVAL, $2, NULL);
     } | STRLIT {
-        $$ = node_str($1);
+        $$ = node_str($1, yylineno);
     } | list {
         $$ = $1;
     } | varname %prec NAMEPREC {
         $$ = node(VARNAME, $1, NULL);
     } | INTEGER {
-        $$ = node_int($1);
+        $$ = node_int($1, yylineno);
     } | FLOAT {
-        $$ = node_dbl($1);
+        $$ = node_dbl($1, yylineno);
     } | T_NOTHING {
-        $$ = node_nothing();
+        $$ = node_nothing(yylineno);
     } | TRUE {
-        $$ = node_boolean(1);
+        $$ = node_boolean(1, yylineno);
     } | FALSE {
-        $$ = node_boolean(0);
+        $$ = node_boolean(0, yylineno);
     } | function_call {
         $$ = $1;
     }
 
 function_call:
-    expr '(' comma_exprs ')' %prec FUNC_CALL {
+    expr '(' comma_exprs ')' %prec PAREN_FUNC_CALL {
         $$ = node(FUNCCALL, $1, $3);
     } | varname comma_exprs %prec FUNC_CALL {
         $$ = node(FUNCCALL, node(VARNAME, $1, NULL), $2);
+    } | expr '(' ')' %prec PAREN_FUNC_CALL {
+        $$ = node(FUNCCALL, $1, node(LISTEND, NULL, NULL));
     }
 
 list:
@@ -301,10 +373,26 @@ comma_exprs:
     }
 
 function_def:
-    DEF varname '(' comma_names ')' statement {
-        $$ = node(CREATE, $2, node(FUNCDEF, $4, $6));
-    } | DEF varname comma_names statement {
-        $$ = node(CREATE, $2, node(FUNCDEF, $3, $4));
+    DEF varname function_params statement {
+        $$ = node(CREATE, $2, node_function(
+           ($4->op == ENCLOSED_SCOPE ? FUNC_BLOCK : 0), $3, $4));
+    } | DEF varname function_params AS statement {
+        $$ = node(CREATE, $2, node_function(
+           ($5->op == ENCLOSED_SCOPE ? FUNC_BLOCK : 0), $3, $5));
+    } | DEF varname block {
+        $$ = node(CREATE, $2, node_function(FUNC_BLOCK, node(LISTEND, NULL, NULL), $3));
+    } | DEF varname AS statement {
+        $$ = node(CREATE, $2, node_function(
+           ($4->op == ENCLOSED_SCOPE ? FUNC_BLOCK : 0), node(LISTEND, NULL, NULL), $4));
+    }
+
+function_params:
+    '(' comma_names ')' {
+        $$ = $2;
+    } | comma_names {
+        $$ = $1;
+    } | '(' ')' {
+        $$ = node(LISTEND, NULL, NULL);
     }
 
 comma_names:
@@ -316,9 +404,9 @@ comma_names:
 
 compound:
     varname INCR {
-        $$ = node(COMPOUND, $1, node(ADD, NULL, node_int(1)));
+        $$ = node(COMPOUND, $1, node(ADD, NULL, node_int(1, yylineno)));
     } | varname DECR {
-        $$ = node(COMPOUND, $1, node(SUB, NULL, node_int(1)));
+        $$ = node(COMPOUND, $1, node(SUB, NULL, node_int(1, yylineno)));
     } | varname PLUSEQUALS expr {
         $$ = node(COMPOUND, $1, node(ADD, NULL, $3));
     } | varname MINUSEQUALS expr {
