@@ -3,6 +3,7 @@
 #define node(x, y, z) (real_node((x), (y), (z), (yylineno)))
 #define node_function(x, y, z) (real_node_function((x), (y), (z), (yylineno)))
 #define error(x) throw_error((x), line_num)
+#pragma once
 
 struct var;
 struct function;
@@ -150,12 +151,6 @@ extern void setvar_int_fv(var *var, int val);
 extern void setvar_boolean_fv(var *var, int val);
 void setvar_list_fv(var *var, list *val);
 
-extern int getvar_int(char *name);
-extern char *getvar_str(char *name);
-extern double getvar_double(char *name);
-extern int getvar_boolean(char *name);
-extern list *getvar_list(char *name);
-
 extern int getvar_int_fv(var *var);
 extern char *getvar_str_fv(var *var);
 extern double getvar_double_fv(var *var);
@@ -192,13 +187,6 @@ extern var *newvar_nothing();
 extern void bind(char *name, var *value);
 var *var_assign_fv(var *new, var *value);
 
-extern var *vars_sum(var *v1, var *v2);
-extern var *vars_diff(var *v1, var *v2);
-extern var *vars_product(var *v1, var *v2);
-extern var *vars_quotient(var *v1, var *v2);
-extern var *vars_concat(var *v1, var *v2);
-extern var *var_test(var *v);
-
 extern void print_var(char *str);
 
 extern char *str_dup(char *str);
@@ -210,6 +198,15 @@ extern void new_eval_scope();
 extern void pop_scope();
 
 extern int line_num;
+
+/* --- from var_ops.c --- */
+
+extern var *vars_sum(var *v1, var *v2);
+extern var *vars_diff(var *v1, var *v2);
+extern var *vars_product(var *v1, var *v2);
+extern var *vars_quotient(var *v1, var *v2);
+extern var *vars_concat(var *v1, var *v2);
+extern var *vars_cmp(var *v1, var *v2, enum asttypes type);
 
 /* --- from list.c --- */
 
