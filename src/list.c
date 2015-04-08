@@ -7,6 +7,7 @@ list *list_push (list* target, var* value);
 var *list_pop(list* target);
 void list_copy(list* dest, list* src);
 var *element_at(list* target, int index);
+var **ref_element_at(list *target, int index);
 int set_element(list *target, int index, var *value);
 list *alloc_list();
 list *alloc_list_size(int size);
@@ -21,16 +22,12 @@ list *list_push(list *target, var *value) {
             return NULL;
         }
     }
-    var_copy(&target->contents[target->size + target->min_index], value);
-    target->contents[target->size].bound = 1;
+    target->contents[target->size + target->min_index] = value;
+    if (debug) printf("Pushed %p: %d -> ", (void*)target->contents[target->size],
+            target->contents[target->size]->bound);
+    target->contents[target->size]->bound++;
+    if (debug) printf("%d\n", target->contents[target->size]->bound);
     target->size++;
-    if (debug) {
-        printf("List now: ");
-        for (int i = target->min_index; i < target->size + target->min_index; i++) {
-            printf("%s ", getvar_str_fv(element_at(target, i)));
-        }
-        printf(" (size: %d)\n", target->size);
-    }
     return target;
 }
 
@@ -49,15 +46,18 @@ var *list_pop(list *target) {
 }
 
 var *list_shift(list *target) {
-    if (debug) printf("Shift list.\n");
+    //if (debug) printf("Shift list.\n");
     if (target->size > 0) {
-        var *to_ret = malloc(sizeof(var));
-        var_copy(to_ret, element_at(target, 0));
+        //var *to_ret = malloc(sizeof(var));
+        //var_copy(to_ret, element_at(target, 0));
+        var *to_ret = element_at(target, 0);
+        //to_ret->bound++;
+        to_ret->bound--;
         target->min_index++;
         target->size--;
         return to_ret;
     } else {
-        if (debug) printf("But it is empty!\n");
+        //if (debug) printf("But it is empty!\n");
         return NULL;
     }
 }
@@ -65,18 +65,25 @@ var *list_shift(list *target) {
 void list_copy(list *dest, list *src) {
     if (debug) printf("\nCopying list...\n");
     for (int i = 0; i < src->size; i++) {
-        if (debug) printf("Copying element %d.\n", i);
-        list_push(dest, element_at(src, i));
+        //if (debug) printf("Copying element %d.\n", i);
+        var *to_push = malloc(sizeof(var));
+        var_copy(to_push, element_at(src, i));
+        list_push(dest, to_push);
     }
-    if (debug) printf("Done copying list, all good.\n");
+    //if (debug) printf("Done copying list, all good.\n");
 }
 
 var *element_at(list *target, int index) {
+    var **ref = ref_element_at(target, index);
+    if (ref == NULL) return NULL;
+    return *ref;
+}
+
+var **ref_element_at(list *target, int index) {
     if (index < 0 || index > target->size-1) {
-        printf("Element index out of range: %d!\n", index);
-        return newvar_empty_list();
+        return NULL;
     }
-    return &(target->contents[index + target->min_index]);
+    return &target->contents[index + target->min_index];
 }
 
 int set_element(list *target, int index, var *value) {
@@ -97,7 +104,7 @@ list *alloc_list() {
     retval->max_size = 4;
     retval->size = 0;
     retval->min_index = 0;
-    retval->contents = malloc(retval->max_size * sizeof(var));
+    retval->contents = malloc(retval->max_size * sizeof(var*));
     return retval;
 }
 
@@ -106,37 +113,44 @@ list *alloc_list_size(int size) {
     retval->max_size = size;
     retval->size = 0;
     retval->min_index = 0;
-    retval->contents = malloc(retval->max_size * sizeof(var));
+    retval->contents = malloc(retval->max_size * sizeof(var*));
     return retval;
 }
 
 void free_list(list *l) {
     var *elem;
-    if (debug) printf("Free a list at %p.\n", (void*)l);
+    //if (debug) printf("Free a list at %p.\n", (void*)l);
     for (int i = 0; i < l->size + l->min_index; i++) {
-        elem = &l->contents[i];
-        if (debug) printf("Free element %d -> %p.\n", i, (void*)elem);
-        if (elem->str_equiv) {
+        elem = l->contents[i];
+        //if (debug) printf("Free element %d -> %p.\n", i, (void*)elem);
+        /*if (elem->str_equiv) {
             free(elem->str_equiv);
         }
         if (elem->type == LIST) {
             free_list(elem->content.l);
         } else if (elem->type == STRING) {
             free(elem->content.s);
-        }
-        if (debug) printf("Done.\n");
+        }*/
+        elem->bound--;
+        check_refs(elem);
+        //if (debug) printf("Done.\n");
     }
     /* this free() will actually free all of them
        because they're allocated in a contiguous
        block */
     free(l->contents);
-    if (debug) printf("Now going to free %p...", (void*)l);
+    //if (debug) printf("Now going to free %p...", (void*)l);
     free(l);
-    if (debug) printf("OK!\n");
+    //if (debug) printf("OK!\n");
 }
 
 void var_copy (var *dest, var *src) {
+    if (src == NULL) {
+        error("attempted to copy a null reference");
+        return;
+    }
     *dest = *src;
+    dest->bound = 0;
     /* copy the string part as well so the pointer doesn't get freed twice */
     if (src->str_equiv != NULL) {
         char *newstr = malloc((strlen(src->str_equiv)+1) * sizeof(char));
@@ -149,5 +163,7 @@ void var_copy (var *dest, var *src) {
     } else if (src->type == STRING) {
         dest->content.s = malloc((strlen(src->content.s)+1)*sizeof(char));
         strcpy(dest->content.s, src->content.s);
+    } else if (src->type == FUNCTION) {
+        dest->content.f = func_copy(src->content.f);
     }
 }

@@ -3,6 +3,7 @@
 #define node(x, y, z) (real_node((x), (y), (z), (yylineno)))
 #define node_function(x, y, z) (real_node_function((x), (y), (z), (yylineno)))
 #define error(x) throw_error((x), line_num)
+#define warn(x) throw_warning((x), line_num)
 
 struct var;
 struct function;
@@ -12,11 +13,12 @@ typedef struct list {
     int max_size;
     int min_index;
     int size;
-    struct var* contents;
+    struct var** contents;
 } list;
 
-enum vartypes {INT, DOUBLE, STRING, BOOLEAN, LIST, FUNCTION, UNDEFINED, NOTHING};
+enum vartypes {INT, DOUBLE, STRING, BOOLEAN, LIST, FUNCTION, REFERENCE, UNDEFINED, NOTHING};
 
+/* A tagged union. */
 typedef struct var {
     int bound;
     enum vartypes type;
@@ -26,6 +28,7 @@ typedef struct var {
         char* s;
         list* l;
         struct function *f;
+        struct var **r;
     } content;
     char *str_equiv;
 } var;
@@ -47,11 +50,23 @@ typedef struct scope {
     /* This is the value of the last expression
        executed within the scope; it is also set
        on function return. */
-    var *last_val;
+    binding *last_val;
     /* This represents whether or not the current scope
        is being evaluated within an EVAL statement. */
     int is_eval;
 } scope;
+
+/* This is a linked list of scope stacks.
+   Unlike the above struct, variables aren't
+   searched for within the other linked ones. */
+/* (This is a lexical scope, essentially) */
+typedef struct func_scope {
+    /* This is a pointer to the top of the stack
+       that this one contains. */
+    scope *top;
+    /* The previous one that will be returned to. */
+    struct func_scope *next;
+} func_scope;
 
 extern scope *outermost;
 extern scope *current_scope;
@@ -135,6 +150,12 @@ typedef struct function {
     /* The AST node that will be executed when
        the function will be called. */
     struct ast_node *exec;
+    /* This is a copy of all variables in scope
+       at the time that the function was defined.
+       When the function is called, the current
+       scope stack is temporarily replaced with
+       a stack with this one on the bottom. */
+    scope *closure;
     enum flags flags;
 } function;
 
@@ -166,6 +187,7 @@ extern var *addvar(char *name);
 extern var *find_var(char *name);
 
 extern var *ast_eval_expr(ast_node *node);
+extern var *ast_eval_assignee(ast_node *node);
 extern ast_node *real_node(enum asttypes type, ast_node *lhs, ast_node *rhs, int line_num);
 extern ast_node *node_int(int val, int line_num);
 extern ast_node *node_str(char *val, int line_num);
@@ -173,7 +195,7 @@ extern ast_node *node_dbl(double val, int line_num);
 extern ast_node *node_name(char *val, int line_num);
 extern ast_node *node_nothing(int line_num);
 extern ast_node *node_boolean(int val, int line_num);
-ast_node *ast_copy(ast_node *node);
+extern ast_node *ast_copy(ast_node *node);
 
 extern void free_node(ast_node *node);
 extern var *alloc_var();
@@ -186,11 +208,16 @@ extern var *newvar_dbl(double val);
 extern var *newvar_boolean(int val);
 extern var *newvar_list(list *val);
 extern var *newvar_empty_list();
-var *newvar_func(list *param_names, ast_node *exec, enum flags flags);
+extern var *newvar_func(list *param_names, ast_node *exec, enum flags flags);
+extern var *newvar_ref(var **ref);
 extern var *newvar_nothing();
+extern var *newvar_undefined();
 
-extern void bind(char *name, var *value);
-var *var_assign_fv(var *new, var *value);
+extern binding *bind(binding *new_binding, var *value);
+extern binding *bind_name(char *name, var *value);
+extern void unbind(binding *to_free);
+extern void unreference(var *to_unref);
+extern var *var_assign_fv(var *new, var *value);
 
 extern var *vars_sum(var *v1, var *v2);
 extern var *vars_diff(var *v1, var *v2);
@@ -208,6 +235,9 @@ extern char *escape_chars(char *str);
 extern void new_scope();
 extern void new_eval_scope();
 extern void pop_scope();
+extern void switch_to_func_scope(scope *to_switch);
+extern void return_func_scope();
+extern scope *scope_copy(scope *s);
 
 extern int line_num;
 
@@ -218,6 +248,7 @@ extern var *list_pop(list* target);
 extern var *list_shift(list *target);
 extern void list_copy(list* dest, list* src);
 extern var *element_at(list* target, int index);
+extern var **ref_element_at(list *target, int index);
 extern int set_element(list *target, int index, var *value);
 extern list *alloc_list();
 extern list *alloc_list_size(int size);
@@ -228,6 +259,8 @@ extern void var_copy (var *dest, var *src);
 
 extern void free_func(function *f);
 extern function *func_copy(function *src);
-extern function *create_func(list *parameters, ast_node *exec, enum flags flags);
+extern function *create_func(list *parameters, ast_node *exec, enum flags flags, scope *closure);
+extern function *create_func_nocopy(list *parameters, ast_node *exec, enum flags flags, scope *closure);
+extern scope *copy_closure(scope *closure);
 extern var *call_func(function *func, list *args);
 extern ast_node *real_node_function(int flags, ast_node *lhs, ast_node *rhs, int line_num);

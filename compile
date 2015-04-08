@@ -3,7 +3,7 @@
 # note: gcc will yell at you. I'll fix this at some point. Or just remove the pedantic/Wall flags.
 cd parser
 lex grammar.l
-yacc -d grammar.y
+yacc -d --debug grammar.y
 cd ..
 mv parser/lex.yy.c parser/y.tab.* src
 gcc -Wall -O0 -pedantic -g -o avocado src/lex.yy.c src/y.tab.c src/avocado.c src/list.c src/functions.c -std=c99 -ll -D_POSIX_SOURCE

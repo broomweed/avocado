@@ -15,6 +15,7 @@ int yyparse(var **result);
 
 scope *outermost;
 scope *current_scope;
+func_scope *current_func_scope;
 var **program_return_value;
 
 int bracket_counts[32];
@@ -58,13 +59,17 @@ int main(int argc, char **argv) {
     outermost->last_val = NULL;
     outermost->is_eval = 0;
     current_scope = outermost;
+    current_func_scope = malloc(sizeof(func_scope));
+    current_func_scope->top = current_scope;
+    current_func_scope->next = NULL;
     if (debug) printf("==== PARSING PHASE ====\n");
     program_return_value = malloc(sizeof(program_return_value));
     yyparse(program_return_value);
     if (yyin) fclose(yyin);
     cleanup();
-    free_var(*program_return_value);
-    free(program_return_value);
+    /*free_var(*program_return_value);
+    free(program_return_value);*/
+    free(current_func_scope);
     //printf("%p", (void*)program_return_value);
     /*if (*program_return_value) {
         return (*program_return_value)->content.i;
@@ -132,7 +137,6 @@ int main(int argc, char **argv) {
 %type <n> qualified_block
 %type <n> statement
 %type <n> assignment
-%type <n> declare
 %type <n> newvar
 %type <n> expr
 %type <n> varname
@@ -234,12 +238,12 @@ qualified_block:
     } | block {
         $$ = $1;
     } | function_def {
-        $$ = $1;
+        $$ = node(EXPR, $1, NULL);
     }
 
 statement:
     expr ';' {
-        $$ = $1;
+        $$ = node(EXPR, $1, NULL);
         yyerrok;
     } | qualified_block {
         $$ = $1;
@@ -247,18 +251,13 @@ statement:
     }
 
 assignment:
-    varname '=' expr {
+    expr '=' expr {
         $$ = node(ASSIGN, $1, $3);
     }
 
 newvar:
     VAR varname {
         $$ = node(CREATE, $2, NULL);
-    }
-
-declare:
-    VAR varname '=' expr {
-        $$ = node(CREATE, $2, $4);
     }
 
 varname:
@@ -271,13 +270,15 @@ varname:
 expr:
     expr INTERP_BEGIN expr INTERP_END expr {
         $$ = node(CONCAT, $1, node(CONCAT, $3, $5));
+    } | INTERP_BEGIN expr INTERP_END expr {
+        $$ = node(CONCAT, $2, $4);
+    } | expr INTERP_BEGIN expr INTERP_END {
+        $$ = node(CONCAT, $1, $3);
     } | assignment {
         $$ = $1;
     } | compound {
         $$ = $1;
     } | newvar {
-        $$ = $1;
-    } | declare {
         $$ = $1;
     } | T_PRINT expr %prec PRINT_PREC {
         $$ = node(PRINT, $2, NULL);
@@ -359,35 +360,37 @@ function_call:
     } | varname comma_exprs %prec FUNC_CALL {
         $$ = node(FUNCCALL, node(VARNAME, $1, NULL), $2);
     } | expr '(' ')' %prec PAREN_FUNC_CALL {
-        $$ = node(FUNCCALL, $1, node(LISTEND, NULL, NULL));
+        $$ = node(FUNCCALL, $1, node(LISTELEM, NULL, NULL));
     }
 
 list:
     '[' comma_exprs ']' {
-        $$ = node(LISTEND, $2, NULL);
+        $$ = $2;
+        /*$$ = node(LISTELEM, NULL, $1);*/
     } | '[' ']' {
-        $$ = node(LISTEND, NULL, NULL);
+        $$ = node(LISTELEM, NULL, NULL);
     }
 
 comma_exprs:
     expr %prec COMMAS {
-        $$ = node(LISTEND, $1, NULL);
+        $$ = node(LISTELEM, NULL, $1);
     } | comma_exprs ',' expr {
         $$ = node(LISTELEM, $3, $1);
     }
 
 function_def:
     DEF varname function_params statement {
-        $$ = node(CREATE, $2, node_function(
+        $$ = node(ASSIGN, node(CREATE, $2, NULL), node_function(
            ($4->op == ENCLOSED_SCOPE ? FUNC_BLOCK : 0), $3, $4));
     } | DEF varname function_params AS statement {
-        $$ = node(CREATE, $2, node_function(
+        $$ = node(ASSIGN, node(CREATE, $2, NULL), node_function(
            ($5->op == ENCLOSED_SCOPE ? FUNC_BLOCK : 0), $3, $5));
     } | DEF varname block {
-        $$ = node(CREATE, $2, node_function(FUNC_BLOCK, node(LISTEND, NULL, NULL), $3));
+        $$ = node(ASSIGN, node(CREATE, $2, NULL), node_function(
+           FUNC_BLOCK, node(LISTELEM, NULL, NULL), $3));
     } | DEF varname AS statement {
-        $$ = node(CREATE, $2, node_function(
-           ($4->op == ENCLOSED_SCOPE ? FUNC_BLOCK : 0), node(LISTEND, NULL, NULL), $4));
+        $$ = node(ASSIGN, node(CREATE, $2, NULL), node_function(
+           ($4->op == ENCLOSED_SCOPE ? FUNC_BLOCK : 0), node(LISTELEM, NULL, NULL), $4));
     }
 
 function_params:
@@ -396,12 +399,12 @@ function_params:
     } | comma_names {
         $$ = $1;
     } | '(' ')' {
-        $$ = node(LISTEND, NULL, NULL);
+        $$ = node(LISTELEM, NULL, NULL);
     }
 
 comma_names:
     varname {
-        $$ = node(LISTEND, $1, NULL);
+        $$ = node(LISTELEM, NULL, $1);
     } | comma_names ',' varname {
         $$ = node(LISTELEM, $3, $1);
     }
