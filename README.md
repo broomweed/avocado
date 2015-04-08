@@ -31,6 +31,12 @@ String literals are enclosed in single (or double) quotes. Variables can hold st
 var h = 'Hello, world!';
 var i = "I love ice cream!";
 ```
+Variables and expressions can be interpolated into double-quoted strings using curly braces, like so:
+```
+var age = 1000;
+var forsaken = "I am {age} years old."; // contains "I am 1000 years old."
+var birthday = "Next year I'll be {age+1} years old."; // contains "Next year I'll be 1001 years old."
+```
 Lists of values are enclosed in square brackets; they are also subscripted with angle brackets. You can't assign to list elements at the moment, but I'm working on it. List subscripts start at 0.
 ```
 var list = [1, 2, 3, 4, 5];
@@ -50,6 +56,8 @@ print x; // prints 2; the x = 6 is now out of scope
 print y; // still prints 5
 ```
 Functions are declared with the `def` keyword, and called by using their name. Functions are actually just variables. Calling and defining functions does not need parentheses, except to avoid ambiguity. Functions can be defined using parentheses if you want. Also, functions that just return an expression do not need a block; they do need the keyword `as`.
+
+**Note: these semantics may change at any time as they're sort of confusing**
 ```
 def println (x) {
     print x:'\n';
@@ -63,8 +71,8 @@ def add x, y as x + y;
 
 println add 4, 5; // prints '9\n'
 ```
-(Note: Functions without parameters do need to be called with an empty pair of parentheses `()`; otherwise it will assume you are talking about the variable that holds the function, not intending to execute the function.)  
-(Note: Return values from functions with blocks don't really work right. I am working on it.)  
+(Note: Functions without parameters do need to be called with an empty pair of parentheses `()`; otherwise it will assume you are talking about the variable that holds the function, not intending to execute the function.)
+(Note: Return values from functions with blocks don't really work right. I am working on it.)
 (Actually, the current one in the repository might not support return values at all; it will soon, though.)
 
 #### Operators and things like that
@@ -74,6 +82,8 @@ Comments are preceded by a `//`, and last until the end of the line:
 // This is a comment
 ```
 The `:` operator is used for concatenation of strings (and numbers):
+
+**Note: this may also change in the future**
 ```
 var h5 = h:y;
 // h5 now contains the string 'Hello, world!5'
@@ -162,6 +172,8 @@ var five = '5';
 var ten2 = 2 * five;    // ten2 also = 10
 ```
 By surrounding a string expression with backticks, you can access the value of the variable referred to by that expression.
+
+**Note: this might not actually work and will be removed very soon**
 ```
 var ref = 'foo';
 var ref2 = 'fo';
