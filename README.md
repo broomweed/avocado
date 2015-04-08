@@ -60,16 +60,16 @@ Functions are declared with the `def` keyword, and called by using their name. F
 **Note: these semantics may change at any time as they're sort of confusing**
 ```
 def println (x) {
-    print x:'\n';
+    print x:"\n";
 }
 // (equivalent to)
 def println x {
-    print x:'\n';
+    print x:"\n";
 }
 
 def add x, y as x + y;
 
-println add 4, 5; // prints '9\n'
+println add 4, 5; // prints "9\n"
 ```
 (Note: Functions without parameters do need to be called with an empty pair of parentheses `()`; otherwise it will assume you are talking about the variable that holds the function, not intending to execute the function.)
 (Note: Return values from functions with blocks don't really work right. I am working on it.)
@@ -184,7 +184,7 @@ print `ref`;        // prints value of variable foo, 'hello'
 print `ref2:'o'`;   // also prints hello
 print ``ref``;      // prints 'world' (``ref`` -> `foo` -> hello)
 ```
-Newlines and tabs can be escaped in strings via `\n` and `\t`.
+Newlines and tabs can be escaped in double-quoted strings via `\n` and `\t`.
 ```
-print '\t':x:'\n';   // prints 5, preceded by a tab and followed by a newline
+print "\t":x:"\n";   // prints 5, preceded by a tab and followed by a newline
 ```
