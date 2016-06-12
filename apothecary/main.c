@@ -56,7 +56,7 @@ int main(void) {
     list_free(l2);
 
     /* Property get/set test. */
-    var *propper = var_new();
+    var *proper = var_new();
     list *propset_params = list_new();
     list *propget_params = list_new();
     list *print_params = list_new();
@@ -67,14 +67,14 @@ int main(void) {
     list_push(propset_params, prop_name);
     list_push(propset_params, prop_val);
     list_push(propget_params, prop_name);
-    var_call_method(propper, "__prop_set", propset_params);
-    var *result = var_call_method(propper, "__prop_get", propget_params);
+    var_call_method(proper, "__prop_set", propset_params);
+    var *result = var_call_method(proper, "__prop_get", propget_params);
     list_push(print_params, result);
     func_call(v2->ct.f, NULL, print_params); /* Print */
     list_free(propset_params);
     list_free(propget_params);
     list_free(print_params);
-    var_check_refs(propper);
+    var_check_refs(proper);
     printf("\n");
 
     /* Scoping test. */
